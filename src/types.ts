@@ -1,0 +1,770 @@
+export interface SeguimientoTrabajo {
+    id: number;
+    envio_retorno: 'Envio' | 'Retorno';
+    fecha: string;
+    observaciones: string;
+    trabajoLaboratorioId: number;
+}
+
+export interface GrupoInventario {
+    id: number;
+    grupo: string;
+    estado: string;
+}
+
+export interface User {
+    id: number;
+    name: string;
+    email: string;
+    estado: string;
+    password?: string; // Optional for list view
+    foto?: string;
+    recepcionista: boolean;
+    codigo_proforma?: number;
+    permisos?: string[]; // Array of denied module IDs
+}
+
+export interface CreateUserDto {
+    name: string;
+    email: string;
+    password: string;
+    estado: string;
+    foto?: string;
+    recepcionista?: boolean;
+    codigo_proforma?: number;
+    permisos?: string[];
+}
+
+
+export interface Inventario {
+    id: number;
+    descripcion: string;
+    cantidad_existente: number;
+    stock_minimo: number;
+    estado: string; // 'Activo' | 'Inactivo'
+    idespecialidad: number;
+    idgrupo_inventario: number;
+    especialidad?: Especialidad;
+    grupoInventario?: GrupoInventario;
+    egresosInventario?: EgresoInventario[];
+}
+
+export interface EgresoInventario {
+    id: number;
+    inventarioId: number;
+    inventario?: Inventario;
+    fecha: string;
+    cantidad: number;
+    consultorio: string;
+    fecha_vencimiento: string;
+}
+
+export interface Doctor {
+    id: number;
+    paterno: string;
+    materno: string;
+    nombre: string;
+    celular: string;
+    direccion: string;
+    estado: string;
+    idEspecialidad?: number;
+    especialidad?: Especialidad;
+}
+
+export interface Proveedor {
+    id: number;
+    proveedor: string;
+    celular: string;
+    direccion: string;
+    email: string;
+    nombre_contacto: string;
+    celular_contacto: string;
+    estado: string;
+}
+
+export interface Personal {
+    id: number;
+    paterno: string;
+    materno: string;
+    nombre: string;
+    ci: string;
+    direccion: string;
+    telefono: string;
+    celular: string;
+    fecha_nacimiento: string;
+    fecha_ingreso: string;
+    estado: string;
+    fecha_baja?: string;
+}
+
+export interface Especialidad {
+    id: number;
+    especialidad: string;
+    estado: string;
+}
+
+export interface Arancel {
+    id: number;
+    detalle: string;
+    precio1: number;
+    precio2: number;
+    tc: number;
+    estado: string;
+    idEspecialidad: number;
+    especialidad?: Especialidad;
+}
+
+export interface FormaPago {
+    id: number;
+    forma_pago: string;
+    estado: string;
+}
+
+export interface Egreso {
+    id: number;
+    fecha: string;
+    destino: 'Consultorio' | 'Casa';
+    detalle: string;
+    monto: number;
+    moneda: 'Bolivianos' | 'Dólares';
+    formaPago?: FormaPago;
+}
+
+export interface Laboratorio {
+    id: number;
+    laboratorio: string;
+    celular: string;
+    telefono: string;
+    direccion: string;
+    email: string;
+    banco: string;
+    numero_cuenta: string;
+    estado: string;
+}
+
+export interface PrecioLaboratorio {
+    id: number;
+    detalle: string;
+    precio: number;
+    idLaboratorio: number;
+    laboratorio?: Laboratorio;
+    estado: string;
+}
+
+export interface Paciente {
+    id: number;
+    fecha: string;
+    paterno: string;
+    materno: string;
+    nombre: string;
+    direccion: string;
+    telefono: string;
+    celular: string;
+    email: string;
+    casilla: string;
+    profesion: string;
+    estado_civil: string;
+    direccion_oficina: string;
+    telefono_oficina: string;
+    fecha_nacimiento: string;
+    sexo: string;
+    seguro_medico: string;
+    poliza: string;
+    recomendado: string;
+    responsable: string;
+    parentesco: string;
+    direccion_responsable: string;
+    telefono_responsable: string;
+    idCategoria: number;
+    categoria?: CategoriaPaciente;
+    tipo_paciente: string;
+    nomenclatura: string;
+    estado: string;
+}
+
+export interface UpdateUserDto extends Partial<CreateUserDto> { }
+
+export interface CategoriaPaciente {
+    id: number;
+    sigla: string;
+    descripcion: string;
+    color: string;
+    estado: string;
+}
+
+export interface ProformaDetalle {
+    id: number;
+    proformaId: number;
+    arancelId: number;
+    arancel?: Arancel;
+    precioUnitario: number;
+    tc: number;
+    piezas: string;
+    cantidad: number;
+    subTotal: number;
+    descuento: number;
+    total: number;
+    posible: boolean;
+}
+
+export interface Proforma {
+    id: number;
+    numero: number;
+    pacienteId: number;
+    paciente?: Paciente;
+    usuarioId: number;
+    usuario?: User;
+    fecha: string;
+    nota: string;
+    total: number;
+    detalles: ProformaDetalle[];
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface HistoriaClinica {
+    id: number;
+    pacienteId: number;
+    paciente?: Paciente;
+    fecha: string;
+    pieza?: string;
+    cantidad: number;
+    proformaDetalleId?: number;
+    proformaDetalle?: ProformaDetalle;
+    tratamiento?: string;
+    observaciones?: string;
+    especialidadId?: number;
+    especialidad?: Especialidad;
+    doctorId?: number;
+    doctor?: Doctor;
+    asistente?: string;
+    estadoTratamiento: string;
+    estadoPresupuesto: string;
+    proformaId?: number;
+    proforma?: Proforma;
+    resaltar: boolean;
+    casoClinico: boolean;
+    pagado: string;
+    precio?: number;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface FormaPago {
+    id: number;
+    forma_pago: string;
+    estado: string;
+}
+
+export interface Pago {
+    id: number;
+    pacienteId: number;
+    paciente?: Paciente;
+    fecha: string;
+    proformaId?: number;
+    proforma?: Proforma;
+    monto: number;
+    tc: number;
+    recibo?: string;
+    factura?: string;
+    formaPago: 'Efectivo' | 'QR' | 'Tarjeta';
+    comisionTarjetaId?: number;
+    comisionTarjeta?: ComisionTarjeta;
+    observaciones?: string;
+    formaPagoRel?: FormaPago;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface ComisionTarjeta {
+    id: number;
+    redBanco: string;
+    monto: number;
+    estado: string;
+}
+
+export interface Agenda {
+    id: number;
+    fecha: string;
+    hora: string;
+    duracion: number;
+    consultorio: number;
+    pacienteId: number;
+    paciente?: Paciente;
+    doctorId: number;
+    doctor?: Doctor;
+    proformaId?: number;
+    proforma?: Proforma;
+    usuarioId: number;
+    fechaAgendado: string;
+    estado: string;
+    tratamiento?: string;
+}
+
+export interface GastoFijo {
+    id: number;
+    destino: string;
+    dia: number;
+    anual: boolean;
+    mes?: string;
+    gasto_fijo: string;
+    monto: number;
+    moneda: string;
+    estado?: string;
+}
+
+export interface PagoGastoFijo {
+    id: number;
+    gastoFijoId: number;
+    gastoFijo?: GastoFijo;
+    fecha: string;
+    monto: number;
+    moneda: string;
+    formaPagoId: number;
+    formaPago?: FormaPago;
+    observaciones: string;
+    createdAt?: string;
+}
+
+export interface ProximaCita {
+    id: number;
+    pacienteId: number;
+    paciente?: Paciente;
+    proformaId?: number;
+    proforma?: Proforma;
+    fecha: string;
+    pieza?: string;
+    proformaDetalleId?: number;
+    proformaDetalle?: ProformaDetalle;
+    observaciones?: string;
+    doctorId: number;
+    doctor?: Doctor;
+    estado: string;
+    createdAt?: string;
+    updatedAt?: string;
+    numero_cuenta: string;
+}
+
+export interface PrecioLaboratorio {
+    id: number;
+    detalle: string;
+    precio: number;
+    idLaboratorio: number;
+    laboratorio?: Laboratorio;
+    estado: string;
+}
+
+export interface Paciente {
+    id: number;
+    fecha: string;
+    paterno: string;
+    materno: string;
+    nombre: string;
+    direccion: string;
+    telefono: string;
+    celular: string;
+    email: string;
+    casilla: string;
+    profesion: string;
+    estado_civil: string;
+    direccion_oficina: string;
+    telefono_oficina: string;
+    fecha_nacimiento: string;
+    sexo: string;
+    seguro_medico: string;
+    poliza: string;
+    recomendado: string;
+    responsable: string;
+    parentesco: string;
+    direccion_responsable: string;
+    telefono_responsable: string;
+    idCategoria: number;
+    categoria?: CategoriaPaciente;
+    tipo_paciente: string;
+    nomenclatura: string;
+    estado: string;
+    fichaMedica?: FichaMedica;
+}
+
+export interface FichaMedica {
+    id: number;
+    alergia_anestesicos: boolean;
+    alergias_drogas: boolean;
+    hepatitis: boolean;
+    asma: boolean;
+    diabetes: boolean;
+    dolencia_cardiaca: boolean;
+    hipertension: boolean;
+    fiebre_reumatica: boolean;
+    diatesis_hemorragia: boolean;
+    sinusitis: boolean;
+    ulcera_gastroduodenal: boolean;
+    enfermedades_tiroides: boolean;
+    observaciones: string;
+    medico_cabecera: string;
+    enfermedad_actual: string;
+    toma_medicamentos: boolean;
+    medicamentos_detalle: string;
+    tratamiento: string;
+    ultima_consulta: string;
+    frecuencia_cepillado: string;
+    usa_cepillo: boolean;
+    usa_hilo_dental: boolean;
+    usa_enjuague: boolean;
+    mal_aliento: boolean;
+    causa_mal_aliento: string;
+    sangra_encias: boolean;
+    dolor_cara: boolean;
+    comentarios: string;
+}
+
+export interface UpdateUserDto extends Partial<CreateUserDto> { }
+
+export interface CategoriaPaciente {
+    id: number;
+    sigla: string;
+    descripcion: string;
+    color: string;
+    estado: string;
+}
+
+export interface ProformaDetalle {
+    id: number;
+    proformaId: number;
+    arancelId: number;
+    arancel?: Arancel;
+    precioUnitario: number;
+    tc: number;
+    piezas: string;
+    cantidad: number;
+    subTotal: number;
+    descuento: number;
+    total: number;
+    posible: boolean;
+}
+
+export interface Proforma {
+    id: number;
+    numero: number;
+    pacienteId: number;
+    paciente?: Paciente;
+    usuarioId: number;
+    usuario?: User;
+    fecha: string;
+    nota: string;
+    total: number;
+    aprobado: boolean;
+    usuario_aprobado?: number;
+    usuarioAprobado?: User;
+    fecha_aprobado?: string;
+    detalles: ProformaDetalle[];
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface HistoriaClinica {
+    id: number;
+    pacienteId: number;
+    paciente?: Paciente;
+    fecha: string;
+    pieza?: string;
+    cantidad: number;
+    proformaDetalleId?: number;
+    proformaDetalle?: ProformaDetalle;
+    tratamiento?: string;
+    observaciones?: string;
+    especialidadId?: number;
+    especialidad?: Especialidad;
+    doctorId?: number;
+    doctor?: Doctor;
+    asistente?: string;
+    hoja: number;
+    estadoTratamiento: string;
+    estadoPresupuesto: string;
+    proformaId?: number;
+    proforma?: Proforma;
+    resaltar: boolean;
+    casoClinico: boolean;
+    pagado: string;
+    precio?: number;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface Pago {
+    id: number;
+    pacienteId: number;
+    paciente?: Paciente;
+    fecha: string;
+    proformaId?: number;
+    proforma?: Proforma;
+    monto: number;
+    moneda: 'Bolivianos' | 'Dólares';
+    tc: number;
+    recibo?: string;
+    factura?: string;
+    formaPago: 'Efectivo' | 'QR' | 'Tarjeta';
+    comisionTarjetaId?: number;
+    comisionTarjeta?: ComisionTarjeta;
+    observaciones?: string;
+    formaPagoRel?: FormaPago;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface ComisionTarjeta {
+    id: number;
+    redBanco: string;
+    monto: number;
+    estado: string;
+}
+
+export interface Agenda {
+    id: number;
+    fecha: string;
+    hora: string;
+    duracion: number;
+    consultorio: number;
+    pacienteId: number;
+    paciente?: Paciente;
+    doctorId: number;
+    doctor?: Doctor;
+    proformaId?: number;
+    proforma?: Proforma;
+    usuarioId: number;
+    fechaAgendado: string;
+    estado: string;
+    tratamiento?: string;
+}
+
+export interface GastoFijo {
+    id: number;
+    destino: string;
+    dia: number;
+    anual: boolean;
+    mes?: string;
+    gasto_fijo: string;
+    monto: number;
+    moneda: string;
+    estado?: string;
+}
+
+export interface PagoGastoFijo {
+    id: number;
+    gastoFijoId: number;
+    gastoFijo?: GastoFijo;
+    fecha: string;
+    monto: number;
+    moneda: string;
+    formaPagoId: number;
+    formaPago?: FormaPago;
+    observaciones: string;
+    createdAt?: string;
+}
+
+export interface ProximaCita {
+    id: number;
+    pacienteId: number;
+    paciente?: Paciente;
+    proformaId?: number;
+    proforma?: Proforma;
+    fecha: string;
+    pieza?: string;
+    proformaDetalleId?: number;
+    proformaDetalle?: ProformaDetalle;
+    observaciones?: string;
+    doctorId: number;
+    doctor?: Doctor;
+    estado: string;
+    createdAt?: string;
+    updatedAt?: string;
+}
+
+export interface SecuenciaTratamiento {
+    id: number;
+    pacienteId: number;
+    paciente?: Paciente;
+    proformaId: number;
+    proforma?: Proforma;
+    fecha: string;
+    periodoncia?: string;
+    cirugia?: string;
+    endodoncia?: string;
+    operatoria?: string;
+    protesis?: string;
+    implantes?: string;
+    ortodoncia?: string;
+    odontopediatria?: string;
+}
+
+export interface Correo {
+    id: number;
+    remitente_id: number;
+    remitente?: User;
+    destinatario_id: number;
+    destinatario?: User;
+    copia_id?: number;
+    copia?: User;
+    asunto: string;
+    mensaje: string;
+    fecha_envio: string;
+    leido_destinatario: boolean;
+    leido_copia: boolean;
+    // Helper property I will use in frontend logic? No, backend sends these raw fields.
+}
+
+export interface CreateCorreoDto {
+    remitente_id: number;
+    destinatario_id: number;
+    copia_id?: number;
+    asunto: string;
+    mensaje: string;
+}
+
+export interface PedidosDetalle {
+    id: number;
+    idpedidos: number;
+    idinventario: number;
+    cantidad: number;
+    precio_unitario: number;
+    fecha_vencimiento: string;
+    inventario?: Inventario;
+}
+
+export interface Pedidos {
+    id: number;
+    fecha: string;
+    idproveedor: number;
+    Sub_Total: number;
+    Descuento: number;
+    Total: number;
+    Observaciones: string;
+    Pagado: boolean;
+    proveedor?: Proveedor;
+    detalles?: PedidosDetalle[];
+}
+
+export interface PagosPedidos {
+    id: number;
+    fecha: string;
+    idPedido: number;
+    pedido?: Pedidos;
+    monto: number;
+    factura?: string;
+    recibo?: string;
+    forma_pago: string;
+}
+
+export interface Cubeta {
+    id: number;
+    codigo: string;
+    descripcion: string;
+    dentro_fuera: string;
+    estado: string;
+}
+
+export interface TrabajoLaboratorio {
+    id: number;
+    idLaboratorio: number;
+    laboratorio?: Laboratorio;
+    idPaciente: number;
+    paciente?: Paciente;
+    idprecios_laboratorios: number;
+    precioLaboratorio?: PrecioLaboratorio;
+    fecha: string;
+    pieza: string;
+    cantidad: number;
+    fecha_pedido: string;
+    color: string;
+    estado: string;
+    cita: string;
+    observacion: string;
+    fecha_terminado?: string;
+    pagado: string;
+    precio_unitario: number;
+    total: number;
+    resaltar: string;
+    idCubeta?: number;
+    cubeta?: Cubeta;
+}
+
+export interface PropuestaDetalle {
+    id: number;
+    propuestaId: number;
+    letra?: string;
+    arancelId: number;
+    arancel?: Arancel;
+    precioUnitario: number;
+    tc: number;
+    piezas: string;
+    cantidad: number;
+    subTotal: number;
+    descuento: number;
+    total: number;
+    posible: boolean;
+}
+
+export interface Propuesta {
+    id: number;
+    pacienteId: number;
+    paciente?: Paciente;
+    numero: number;
+    letra?: string;
+    fecha: string;
+    total: number;
+    nota: string;
+    usuarioId: number;
+    usuario?: User;
+    detalles: PropuestaDetalle[];
+}
+
+export interface Calificacion {
+    id: number;
+    personalId: number;
+    personal?: Personal;
+    pacienteId: number;
+    paciente?: Paciente;
+    consultorio: number;
+    calificacion: 'Malo' | 'Regular' | 'Bueno';
+    fecha: string;
+    observaciones?: string;
+    evaluadorId: number;
+    evaluador?: User;
+    createdAt?: string;
+    updatedAt?: string;
+}
+
+export interface Receta {
+    id: number;
+    pacienteId: number;
+    paciente?: Paciente;
+    userId: number;
+    user?: { id: number; name: string };
+    fecha: string;
+    medicamentos: string;
+    indicaciones: string;
+    detalles?: RecetaDetalle[];
+}
+
+export interface RecetaDetalle {
+    id: number;
+    recetaId: number;
+    medicamento: string;
+    cantidad: string;
+    indicacion: string;
+}
+
+export interface MaterialUtilizado {
+    id: number;
+    historiaClinicaId: number;
+    historiaClinica?: HistoriaClinica;
+    inventarioId: number;
+    inventario?: Inventario;
+    fecha: string;
+    cantidad: string;
+    observaciones?: string;
+    userId: number;
+    user?: User;
+    createdAt?: string;
+    updatedAt?: string;
+}
