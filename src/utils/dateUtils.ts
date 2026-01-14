@@ -25,16 +25,21 @@ export const formatDate = (date: string | Date | undefined | null): string => {
     // So we use getUTCDate().
 
     // Heuristic: If string looks like a plain date, use UTC parts.
-    if (typeof date === 'string' && date.match(/^\d{4}-\d{2}-\d{2}$/)) {
-        const [year, month, day] = date.split('-').map(Number);
-        return `${day.toString().padStart(2, '0')}/${month.toString().padStart(2, '0')}/${year}`;
+    // Heuristic: If string looks like a plain date or ISO date, use extracted parts to avoid TZ issues.
+    if (typeof date === 'string') {
+        const datePart = date.split('T')[0];
+        if (datePart.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            const [year, month, day] = datePart.split('-').map(Number);
+            return `${day.toString().padStart(2, '0')}/${month.toString().padStart(2, '0')}/${year}`;
+        }
     }
 
-    // Fallback for full ISO strings or Date objects: standard local formatting
-    // But forcing DD/MM/YYYY
-    const day = d.getDate().toString().padStart(2, '0');
-    const month = (d.getMonth() + 1).toString().padStart(2, '0');
-    const year = d.getFullYear();
+    // For Date objects, assuming they represent a date without time (e.g. from a 'date' column),
+    // we should use UTC methods because 'date' columns are usually parsed as UTC midnight.
+    // If we use local methods (getDate), it will shift to previous day in Western hemisphere.
+    const day = d.getUTCDate().toString().padStart(2, '0');
+    const month = (d.getUTCMonth() + 1).toString().padStart(2, '0');
+    const year = d.getUTCFullYear();
 
     return `${day}/${month}/${year}`;
 };

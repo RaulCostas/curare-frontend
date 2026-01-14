@@ -631,7 +631,7 @@ const PagosPedidosList: React.FC = () => {
             </div>
 
             <div className="mb-2 text-gray-600 dark:text-gray-400 text-sm">
-                Mostrando {currentPagos.length} de {filteredPagos.length} resultados
+                Mostrando {filteredPagos.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filteredPagos.length)} de {filteredPagos.length} resultados
             </div>
 
             <div className="overflow-x-auto">

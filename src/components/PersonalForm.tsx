@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../services/api';
 import Swal from 'sweetalert2';
-import type { Personal } from '../types';
+import type { Personal, PersonalTipo } from '../types';
 import ManualModal, { type ManualSection } from './ManualModal';
 
 const PersonalForm: React.FC = () => {
@@ -17,11 +17,13 @@ const PersonalForm: React.FC = () => {
         fecha_nacimiento: '',
         fecha_ingreso: '',
         estado: 'activo',
-        fecha_baja: ''
+        fecha_baja: '',
+        personalTipoId: '' as any
     });
     const navigate = useNavigate();
     const { id } = useParams<{ id: string }>();
     const [showManual, setShowManual] = useState(false);
+    const [personalTipos, setPersonalTipos] = useState<PersonalTipo[]>([]);
 
     const manualSections: ManualSection[] = [
         {
@@ -39,6 +41,7 @@ const PersonalForm: React.FC = () => {
     ];
 
     useEffect(() => {
+        fetchPersonalTipos();
         if (id) {
             api.get<Personal>(`/personal/${id}`)
                 .then(response => {
@@ -47,7 +50,8 @@ const PersonalForm: React.FC = () => {
                         ...data,
                         fecha_nacimiento: data.fecha_nacimiento ? data.fecha_nacimiento.split('T')[0] : '',
                         fecha_ingreso: data.fecha_ingreso ? data.fecha_ingreso.split('T')[0] : '',
-                        fecha_baja: data.fecha_baja ? data.fecha_baja.split('T')[0] : ''
+                        fecha_baja: data.fecha_baja ? data.fecha_baja.split('T')[0] : '',
+                        personalTipoId: data.personal_tipo_id || ''
                     });
                 })
                 .catch(error => {
@@ -61,6 +65,19 @@ const PersonalForm: React.FC = () => {
         }
     }, [id]);
 
+    const fetchPersonalTipos = async () => {
+        try {
+            const response = await api.get('/personal-tipo');
+            // Check if response is array or paginated object
+            const areas = Array.isArray(response.data) ? response.data :
+                (response.data.data ? response.data.data : []);
+            // Filter only active areas
+            setPersonalTipos(areas.filter((a: PersonalTipo) => a.estado === 'activo' || a.estado === 'Activo'));
+        } catch (error) {
+            console.error('Error fetching areas:', error);
+        }
+    };
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         setFormData({
             ...formData,
@@ -71,10 +88,23 @@ const PersonalForm: React.FC = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
+            // Convert personalTipoId to number or null
+            let personalTipoIdValue: number | null = null;
+            if (formData.personalTipoId && formData.personalTipoId !== '') {
+                personalTipoIdValue = Number(formData.personalTipoId);
+            }
+
             const submitData = {
                 ...formData,
-                fecha_baja: formData.estado === 'inactivo' && formData.fecha_baja ? formData.fecha_baja : undefined
+                fecha_baja: formData.estado === 'inactivo' && formData.fecha_baja ? formData.fecha_baja : undefined,
+                personalTipoId: personalTipoIdValue
             };
+
+            console.log('=== FRONTEND SUBMIT DEBUG ===');
+            console.log('FormData.personalTipoId:', formData.personalTipoId);
+            console.log('Converted personalTipoIdValue:', personalTipoIdValue);
+            console.log('Final submitData:', submitData);
+            console.log('=== END DEBUG ===');
 
             if (id) {
                 await api.patch(`/personal/${id}`, submitData);
@@ -266,6 +296,33 @@ const PersonalForm: React.FC = () => {
                                 required
                                 className="w-full pl-10 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
+                        </div>
+                    </div>
+                    <div className="mb-4">
+                        <label className="block mb-2 font-medium text-gray-700 dark:text-gray-300">Área:</label>
+                        <div className="relative">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 pointer-events-none">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                            </svg>
+                            <select
+                                name="personalTipoId"
+                                value={formData.personalTipoId}
+                                onChange={handleChange}
+                                className="w-full pl-10 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+                            >
+                                <option value="">Seleccione un Área</option>
+                                {personalTipos.map(tipo => (
+                                    <option key={tipo.id} value={tipo.id}>
+                                        {tipo.area}
+                                    </option>
+                                ))}
+                            </select>
+                            <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-gray-400 dark:text-gray-500">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </div>
                         </div>
                     </div>
                     <div className="mb-4">

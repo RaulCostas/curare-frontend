@@ -21,7 +21,7 @@ const PacienteList: React.FC = () => {
     const [showManual, setShowManual] = useState(false);
     const [showImagenesModal, setShowImagenesModal] = useState(false);
     const [selectedPacienteIdForImages, setSelectedPacienteIdForImages] = useState<number | null>(null);
-    const limit = 5;
+    const limit = 10;
     const navigate = useNavigate();
 
     const manualSections: ManualSection[] = [
@@ -840,7 +840,7 @@ const PacienteList: React.FC = () => {
             </div>
 
             <div className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                Mostrando {pacientes.length} de {totalRecords} resultados
+                Mostrando {totalRecords === 0 ? 0 : (currentPage - 1) * limit + 1} - {Math.min(currentPage * limit, totalRecords)} de {totalRecords} resultados
             </div>
 
             <div className="overflow-x-auto">

@@ -24,7 +24,7 @@ const PersonalList: React.FC = () => {
     const [totalPages, setTotalPages] = useState(1);
     const [total, setTotal] = useState(0);
     const [showManual, setShowManual] = useState(false);
-    const limit = 5;
+    const limit = 10;
 
     const manualSections: ManualSection[] = [
         {
@@ -158,6 +158,7 @@ const PersonalList: React.FC = () => {
                 'Teléfono': p.telefono,
                 'Celular': p.celular,
                 'Dirección': p.direccion,
+                'Área': p.personalTipo?.area || '',
                 'Fecha Nacimiento': formatDate(p.fecha_nacimiento),
                 'Fecha Ingreso': formatDate(p.fecha_ingreso),
                 'Estado': p.estado,
@@ -214,6 +215,7 @@ const PersonalList: React.FC = () => {
                 p.telefono,
                 p.celular,
                 p.direccion,
+                p.personalTipo?.area || '-',
                 formatDate(p.fecha_nacimiento),
                 formatDate(p.fecha_ingreso),
                 p.estado.charAt(0).toUpperCase() + p.estado.slice(1),
@@ -221,7 +223,7 @@ const PersonalList: React.FC = () => {
             ]);
 
             autoTable(doc, {
-                head: [['#', 'Nombre Completo', 'CI', 'Teléfono', 'Celular', 'Dirección', 'F. Nac.', 'F. Ingreso', 'Estado', 'F. Baja']],
+                head: [['#', 'Nombre Completo', 'CI', 'Teléfono', 'Celular', 'Dirección', 'Área', 'F. Nac.', 'F. Ingreso', 'Estado', 'F. Baja']],
                 body: tableData,
                 startY: 35,
                 theme: 'plain',
@@ -419,6 +421,7 @@ const PersonalList: React.FC = () => {
                                 <th>Teléfono</th>
                                 <th>Celular</th>
                                 <th>Dirección</th>
+                                <th>Área</th>
                                 <th>F. Nac.</th>
                                 <th>F. Ingreso</th>
                                 <th>Estado</th>
@@ -434,6 +437,7 @@ const PersonalList: React.FC = () => {
                                     <td>${p.telefono}</td>
                                     <td>${p.celular}</td>
                                     <td>${p.direccion}</td>
+                                    <td>${p.personalTipo?.area || '-'}</td>
                                     <td>${formatDate(p.fecha_nacimiento)}</td>
                                     <td>${formatDate(p.fecha_ingreso)}</td>
                                     <td class="${p.estado === 'activo' ? 'status-active' : 'status-inactive'}">
@@ -549,7 +553,7 @@ const PersonalList: React.FC = () => {
             </div>
 
             <div className="mb-2 text-gray-600 dark:text-gray-400 text-sm">
-                Mostrando {personal.length} de {total} resultados
+                Mostrando {total === 0 ? 0 : (currentPage - 1) * limit + 1} - {Math.min(currentPage * limit, total)} de {total} resultados
             </div>
 
             <div className="overflow-x-auto">
@@ -562,6 +566,7 @@ const PersonalList: React.FC = () => {
                             <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">Teléfono</th>
                             <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">Celular</th>
                             <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">Dirección</th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">Área</th>
                             <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">F. Nacimiento</th>
                             <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">F. Ingreso</th>
                             <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">Estado</th>
@@ -578,6 +583,7 @@ const PersonalList: React.FC = () => {
                                 <td className="p-3 text-gray-800 dark:text-gray-300">{p.telefono}</td>
                                 <td className="p-3 text-gray-800 dark:text-gray-300">{p.celular}</td>
                                 <td className="p-3 text-gray-800 dark:text-gray-300">{p.direccion}</td>
+                                <td className="p-3 text-gray-800 dark:text-gray-300">{p.personalTipo?.area || '-'}</td>
                                 <td className="p-3 text-gray-800 dark:text-gray-300">{formatDate(p.fecha_nacimiento)}</td>
                                 <td className="p-3 text-gray-800 dark:text-gray-300">{formatDate(p.fecha_ingreso)}</td>
                                 <td className="p-3">

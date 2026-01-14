@@ -77,6 +77,18 @@ const UserForm: React.FC = () => {
                     showConfirmButton: false
                 });
             }
+
+            // Check if updated user is current logged-in user to update header photo
+            const currentUserStr = localStorage.getItem('user');
+            if (currentUserStr && id) {
+                const currentUser = JSON.parse(currentUserStr);
+                if (currentUser.id === Number(id)) {
+                    // Refresh data in localStorage first (optional since Layout fetches it, but good practice)
+                    // Actually Layout fetches from API, so just trigger event
+                    window.dispatchEvent(new Event('user-updated'));
+                }
+            }
+
             navigate('/users');
         } catch (error: any) {
             console.error('Error saving user:', error);

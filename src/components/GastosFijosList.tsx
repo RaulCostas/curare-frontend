@@ -58,7 +58,7 @@ const GastosFijosList: React.FC = () => {
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
     const [currentPagosPage, setCurrentPagosPage] = useState(1);
-    const itemsPerPage = 5;
+    const itemsPerPage = 10;
 
     useEffect(() => {
         fetchGastos();
@@ -1026,7 +1026,7 @@ const GastosFijosList: React.FC = () => {
                     <div className="mb-2 text-gray-600 dark:text-gray-400 text-sm pl-1 no-print">
                         {filteredGastos.length > 0 ? (
                             <span>
-                                Mostrando {currentGastos.length} de {filteredGastos.length} registros
+                                Mostrando {filteredGastos.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filteredGastos.length)} de {filteredGastos.length} registros
                             </span>
                         ) : (
                             <span>Mostrando 0 registros</span>
@@ -1219,7 +1219,7 @@ const GastosFijosList: React.FC = () => {
                     <div className="mb-2 text-gray-600 dark:text-gray-400 text-sm pl-1 no-print">
                         {filteredPagos.length > 0 ? (
                             <span>
-                                Mostrando {currentPagos.length} de {filteredPagos.length} registros
+                                Mostrando {filteredPagos.length === 0 ? 0 : (currentPagosPage - 1) * itemsPerPage + 1} - {Math.min(currentPagosPage * itemsPerPage, filteredPagos.length)} de {filteredPagos.length} registros
                             </span>
                         ) : (
                             <span>Mostrando 0 registros</span>
@@ -1314,7 +1314,7 @@ const GastosFijosList: React.FC = () => {
             )}
 
             {showPaymentForm && selectedGasto && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 no-print">
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4 no-print">
                     <PagosGastosFijosForm
                         gastoFijo={selectedGasto}
                         existingPayment={selectedPayment}
@@ -1335,7 +1335,7 @@ const GastosFijosList: React.FC = () => {
             />
             {/* Print Selection Modal */}
             {showPrintModal && (
-                <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+                <div className="fixed inset-0 z-[9999] overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
                     <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
                         <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onClick={() => setShowPrintModal(false)}></div>
                         <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
@@ -1432,7 +1432,7 @@ const GastosFijosList: React.FC = () => {
             )}
             {/* Pagos Print Modal */}
             {showPagosPrintModal && (
-                <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+                <div className="fixed inset-0 z-[9999] overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
                     <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
                         <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onClick={() => setShowPagosPrintModal(false)}></div>
                         <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>

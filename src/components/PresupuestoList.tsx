@@ -4,6 +4,7 @@ import api from '../services/api';
 import Swal from 'sweetalert2';
 import type { Paciente } from '../types';
 import jsPDF from 'jspdf';
+import Pagination from './Pagination';
 import autoTable from 'jspdf-autotable';
 import { formatDateSpanish, numberToWords } from '../utils/formatters';
 import ManualModal, { type ManualSection } from './ManualModal';
@@ -29,23 +30,41 @@ const PresupuestoList: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [showManual, setShowManual] = useState(false);
     const [budgetsWithRelations, setBudgetsWithRelations] = useState<Set<number>>(new Set());
+    const [completedBudgets, setCompletedBudgets] = useState<Set<number>>(new Set());
+
+    // Pagination
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
 
     const manualSections: ManualSection[] = [
         {
             title: 'Presupuestos',
-            content: 'Gestión de proformas y presupuestos de tratamientos para el paciente.'
+            content: 'Gestión de proformas y presupuestos de tratamientos para el paciente. Los presupuestos permiten planificar tratamientos, hacer seguimiento de piezas completadas y controlar el estado de finalización.'
         },
         {
             title: 'Nuevo Presupuesto',
-            content: 'Cree un nuevo presupuesto seleccionando tratamientos del arancel. Puede imprimirlo o guardarlo como PDF.'
+            content: 'Cree un nuevo presupuesto seleccionando tratamientos del arancel. Puede especificar las piezas dentales a tratar, agregar notas y generar PDF para entregar al paciente.'
+        },
+        {
+            title: 'Indicadores Visuales',
+            content: 'Los presupuestos terminados aparecen con las columnas "# Pres." y "Fecha" tachadas en verde. Esto indica que todos los tratamientos del plan han sido completados en Historia Clínica.'
+        },
+        {
+            title: 'Seguimiento de Piezas',
+            content: 'Al ver o editar un presupuesto, las piezas dentales completadas aparecen tachadas en verde. Solo cuando TODAS las piezas de un tratamiento están terminadas, el tratamiento completo se marca como finalizado.'
         },
         {
             title: 'Aprobación',
-            content: 'Los presupuestos pueden ser aprobados ingresando un código de seguridad, lo que cambia su estado a "Aprobado".'
+            content: 'Los presupuestos pueden ser aprobados ingresando un código de seguridad. Una vez aprobados, pueden ser utilizados en Historia Clínica y Agenda para registrar tratamientos realizados.'
         },
         {
-            title: 'Convertir a Trabajo',
-            content: 'Un presupuesto aprobado puede, en futuras versiones, convertirse automáticamente en un plan de tratamiento activo.'
+            title: 'Acciones Disponibles',
+            content: 'Ver/Editar presupuesto, Aprobar, Eliminar (solo si no tiene pagos o historia clínica), Enviar por WhatsApp, Imprimir PDF, y Exportar a Excel.'
+        },
+        {
+            title: 'Estados del Presupuesto',
+            content: 'Un presupuesto puede estar: Pendiente (sin aprobar), Aprobado (listo para usar), En Proceso (con tratamientos iniciados), o Terminado (todos los tratamientos completados).'
         }
     ];
 
@@ -55,12 +74,28 @@ const PresupuestoList: React.FC = () => {
         p.fecha.includes(searchTerm)
     );
 
+    // Pagination Logic
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentProformas = filteredProformas.slice(indexOfFirstItem, indexOfLastItem);
+
     useEffect(() => {
         if (id) {
             fetchPaciente(Number(id));
             fetchProformas(Number(id));
         }
     }, [id]);
+
+    // Reset pagination when search changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm]);
+
+    // ... (rest of functions)
+
+    // In render:
+
+
 
     const fetchPaciente = async (pacienteId: number) => {
         try {
@@ -73,13 +108,11 @@ const PresupuestoList: React.FC = () => {
 
     const fetchProformas = async (pacienteId: number) => {
         try {
-            const response = await api.get('/proformas');
-            const allProformas = response.data;
-            const patientProformas = allProformas.filter((p: any) => p.pacienteId === Number(pacienteId));
-            setProformas(patientProformas);
+            const response = await api.get(`/proformas/paciente/${pacienteId}`);
+            setProformas(response.data);
 
             // Check which budgets have payments or clinical history
-            await checkBudgetsWithRelations(patientProformas.map((p: any) => p.id));
+            await checkBudgetsWithRelations(response.data.map((p: any) => p.id));
         } catch (error) {
             console.error('Error fetching proformas:', error);
         }
@@ -93,6 +126,7 @@ const PresupuestoList: React.FC = () => {
             ]);
 
             const budgetsWithData = new Set<number>();
+            const budgetsCompleted = new Set<number>();
 
             // Check for payments
             pagosResponse.data.forEach((pago: any) => {
@@ -101,14 +135,20 @@ const PresupuestoList: React.FC = () => {
                 }
             });
 
-            // Check for clinical history
+            // Check for clinical history and completed budgets
             historiaResponse.data.forEach((historia: any) => {
                 if (historia.proformaId && proformaIds.includes(historia.proformaId)) {
                     budgetsWithData.add(historia.proformaId);
+
+                    // Check if this budget is marked as terminado
+                    if (historia.estadoPresupuesto === 'terminado') {
+                        budgetsCompleted.add(historia.proformaId);
+                    }
                 }
             });
 
             setBudgetsWithRelations(budgetsWithData);
+            setCompletedBudgets(budgetsCompleted);
         } catch (error) {
             console.error('Error checking budget relations:', error);
         }
@@ -603,6 +643,13 @@ const PresupuestoList: React.FC = () => {
                 )}
             </div>
 
+            {/* Record Count */}
+            {filteredProformas.length > 0 && (
+                <div className="mb-4 px-4 text-sm text-gray-600 dark:text-gray-400">
+                    Mostrando {indexOfFirstItem + 1} a {Math.min(indexOfLastItem, filteredProformas.length)} de {filteredProformas.length} presupuestos
+                </div>
+            )}
+
             <div className="overflow-x-auto rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                     <thead className="bg-gray-50 dark:bg-gray-700">
@@ -620,146 +667,151 @@ const PresupuestoList: React.FC = () => {
                         </tr>
                     </thead>
                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                        {filteredProformas.map((proforma) => (
-                            <tr key={proforma.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                                <td className="px-5 py-4 whitespace-nowrap text-sm font-medium">
-                                    {proforma.numero}
-                                </td>
-                                <td className="px-5 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                    {proforma.fecha.split('T')[0]}
-                                </td>
-                                <td className="px-5 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                    {proforma.usuario?.name || 'Sistema'}
-                                </td>
-                                <td className="px-5 py-4 whitespace-nowrap text-sm font-bold text-gray-800 dark:text-gray-200">
-                                    {Number(proforma.total).toFixed(2)}
-                                </td>
-                                <td className="px-5 py-4 whitespace-nowrap text-center">
-                                    <span
-                                        className={`px-3 py-1 rounded-full text-xs font-bold shadow-sm cursor-help ${proforma.aprobado
-                                            ? 'bg-gradient-to-r from-green-400 to-green-600 text-white'
-                                            : 'bg-gradient-to-r from-red-400 to-red-600 text-white'
-                                            }`}
-                                        title={proforma.aprobado && proforma.usuarioAprobado ? `Aprobado por: ${proforma.usuarioAprobado.name}\nFecha: ${proforma.fecha_aprobado}` : ''}
-                                    >
-                                        {proforma.aprobado ? 'SÍ' : 'NO'}
-                                    </span>
-                                </td>
-                                <td className="px-5 py-4 text-sm text-gray-500 dark:text-gray-400 max-w-xs truncate" title={proforma.nota}>
-                                    {proforma.nota}
-                                </td>
-                                <td className="px-5 py-4 whitespace-nowrap text-center no-print">
-                                    <div className="flex gap-2 justify-center">
-                                        <button
-                                            onClick={() => handleSendWhatsApp(proforma, true)}
-                                            className="p-2 bg-green-600 text-white rounded-lg hover:bg-green-700 shadow-md transition-all transform hover:-translate-y-0.5"
-                                            title="Con pago"
+                        {currentProformas.map((proforma) => {
+                            const isCompleted = completedBudgets.has(proforma.id);
+                            return (
+                                <tr key={proforma.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                                    <td className={`px-5 py-4 whitespace-nowrap text-sm font-medium ${isCompleted ? 'text-green-600 dark:text-green-400 line-through decoration-2' : 'text-gray-900 dark:text-gray-200'
+                                        }`}>
+                                        {proforma.numero}
+                                    </td>
+                                    <td className={`px-5 py-4 whitespace-nowrap text-sm ${isCompleted ? 'text-green-600 dark:text-green-400 line-through decoration-2' : 'text-gray-500 dark:text-gray-400'
+                                        }`}>
+                                        {proforma.fecha.split('T')[0]}
+                                    </td>
+                                    <td className="px-5 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                        {proforma.usuario?.name || 'Sistema'}
+                                    </td>
+                                    <td className="px-5 py-4 whitespace-nowrap text-sm font-bold text-gray-800 dark:text-gray-200">
+                                        {Number(proforma.total).toFixed(2)}
+                                    </td>
+                                    <td className="px-5 py-4 whitespace-nowrap text-center">
+                                        <span
+                                            className={`px-3 py-1 rounded-full text-xs font-bold shadow-sm cursor-help ${proforma.aprobado
+                                                ? 'bg-gradient-to-r from-green-400 to-green-600 text-white'
+                                                : 'bg-gradient-to-r from-red-400 to-red-600 text-white'
+                                                }`}
+                                            title={proforma.aprobado && proforma.usuarioAprobado ? `Aprobado por: ${proforma.usuarioAprobado.name}\nFecha: ${proforma.fecha_aprobado}` : ''}
                                         >
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
-                                            </svg>
-                                        </button>
-                                        <button
-                                            onClick={() => handleSendWhatsApp(proforma, false)}
-                                            className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 shadow-md transition-all transform hover:-translate-y-0.5"
-                                            title="Sin pago"
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </td>
-                                <td className="px-5 py-4 whitespace-nowrap text-center no-print">
-                                    <div className="flex gap-2 justify-center">
-                                        <button
-                                            onClick={() => generatePDF(proforma, 'print', true)}
-                                            className="p-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 shadow-md transition-all transform hover:-translate-y-0.5"
-                                            title="Con Pago"
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                                            </svg>
-                                        </button>
-                                        <button
-                                            onClick={() => generatePDF(proforma, 'print', false)}
-                                            className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md transition-all transform hover:-translate-y-0.5"
-                                            title="Sin pago"
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </td>
-                                <td className="px-5 py-4 whitespace-nowrap text-center no-print">
-                                    <div className="flex gap-2 justify-center">
-                                        <button
-                                            onClick={() => generatePDF(proforma, 'download', true)}
-                                            className="p-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 shadow-md transition-all transform hover:-translate-y-0.5"
-                                            title="Con pago"
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                            </svg>
-                                        </button>
-                                        <button
-                                            onClick={() => generatePDF(proforma, 'download', false)}
-                                            className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md transition-all transform hover:-translate-y-0.5"
-                                            title="Sin pago"
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </td>
-                                <td className="px-5 py-4 whitespace-nowrap text-center no-print">
-                                    <div className="flex gap-2 justify-center">
-                                        <button
-                                            onClick={() => navigate(`/pacientes/${id}/presupuestos/view/${proforma.id}`)}
-                                            className="p-2 bg-orange-400 text-white rounded-lg hover:bg-orange-500 shadow-md transition-all transform hover:-translate-y-0.5"
-                                            title="Ver"
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                            </svg>
-                                        </button>
-                                        <Link
-                                            to={`/pacientes/${id}/presupuestos/edit/${proforma.id}`}
-                                            className="p-2 bg-yellow-400 text-white rounded-lg hover:bg-yellow-500 shadow-md transition-all transform hover:-translate-y-0.5 inline-flex items-center justify-center"
-                                            title="Editar"
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                                            </svg>
-                                        </Link>
-                                        {!proforma.aprobado && (
+                                            {proforma.aprobado ? 'SÍ' : 'NO'}
+                                        </span>
+                                    </td>
+                                    <td className="px-5 py-4 text-sm text-gray-500 dark:text-gray-400 max-w-xs truncate" title={proforma.nota}>
+                                        {proforma.nota}
+                                    </td>
+                                    <td className="px-5 py-4 whitespace-nowrap text-center no-print">
+                                        <div className="flex gap-2 justify-center">
                                             <button
-                                                onClick={() => handleApprove(proforma.id)}
-                                                className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 shadow-md transition-all transform hover:-translate-y-0.5"
-                                                title="Aprobar Presupuesto"
+                                                onClick={() => handleSendWhatsApp(proforma, true)}
+                                                className="p-2 bg-green-600 text-white rounded-lg hover:bg-green-700 shadow-md transition-all transform hover:-translate-y-0.5"
+                                                title="Con pago"
                                             >
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
                                                 </svg>
                                             </button>
-                                        )}
-                                        <button
-                                            onClick={() => handleDelete(proforma.id)}
-                                            disabled={!canDeleteBudget(proforma.id)}
-                                            className="p-2 bg-red-500 text-white rounded-lg shadow-md transition-all transform disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none hover:bg-red-600 hover:-translate-y-0.5"
-                                            title={!canDeleteBudget(proforma.id) ? "No se puede eliminar: tiene pagos o historia clínica asociada" : "Eliminar Presupuesto"}
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                                <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
+                                            <button
+                                                onClick={() => handleSendWhatsApp(proforma, false)}
+                                                className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 shadow-md transition-all transform hover:-translate-y-0.5"
+                                                title="Sin pago"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </td>
+                                    <td className="px-5 py-4 whitespace-nowrap text-center no-print">
+                                        <div className="flex gap-2 justify-center">
+                                            <button
+                                                onClick={() => generatePDF(proforma, 'print', true)}
+                                                className="p-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 shadow-md transition-all transform hover:-translate-y-0.5"
+                                                title="Con Pago"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                                                </svg>
+                                            </button>
+                                            <button
+                                                onClick={() => generatePDF(proforma, 'print', false)}
+                                                className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md transition-all transform hover:-translate-y-0.5"
+                                                title="Sin pago"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </td>
+                                    <td className="px-5 py-4 whitespace-nowrap text-center no-print">
+                                        <div className="flex gap-2 justify-center">
+                                            <button
+                                                onClick={() => generatePDF(proforma, 'download', true)}
+                                                className="p-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 shadow-md transition-all transform hover:-translate-y-0.5"
+                                                title="Con pago"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                </svg>
+                                            </button>
+                                            <button
+                                                onClick={() => generatePDF(proforma, 'download', false)}
+                                                className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md transition-all transform hover:-translate-y-0.5"
+                                                title="Sin pago"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </td>
+                                    <td className="px-5 py-4 whitespace-nowrap text-center no-print">
+                                        <div className="flex gap-2 justify-center">
+                                            <button
+                                                onClick={() => navigate(`/pacientes/${id}/presupuestos/view/${proforma.id}`)}
+                                                className="p-2 bg-orange-400 text-white rounded-lg hover:bg-orange-500 shadow-md transition-all transform hover:-translate-y-0.5"
+                                                title="Ver"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                </svg>
+                                            </button>
+                                            <Link
+                                                to={`/pacientes/${id}/presupuestos/edit/${proforma.id}`}
+                                                className="p-2 bg-yellow-400 text-white rounded-lg hover:bg-yellow-500 shadow-md transition-all transform hover:-translate-y-0.5 inline-flex items-center justify-center"
+                                                title="Editar"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                                                </svg>
+                                            </Link>
+                                            {!proforma.aprobado && (
+                                                <button
+                                                    onClick={() => handleApprove(proforma.id)}
+                                                    className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 shadow-md transition-all transform hover:-translate-y-0.5"
+                                                    title="Aprobar Presupuesto"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={() => handleDelete(proforma.id)}
+                                                disabled={!canDeleteBudget(proforma.id)}
+                                                className="p-2 bg-red-500 text-white rounded-lg shadow-md transition-all transform disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none hover:bg-red-600 hover:-translate-y-0.5"
+                                                title={!canDeleteBudget(proforma.id) ? "No se puede eliminar: tiene pagos o historia clínica asociada" : "Eliminar Presupuesto"}
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            );
+                        })}
                         {filteredProformas.length === 0 && (
                             <tr>
                                 <td colSpan={8} className="px-5 py-10 text-center text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">
@@ -776,13 +828,22 @@ const PresupuestoList: React.FC = () => {
                 </table>
             </div>
 
+            {/* Pagination */}
+            {filteredProformas.length > 0 && (
+                <Pagination
+                    currentPage={currentPage}
+                    totalPages={Math.ceil(filteredProformas.length / itemsPerPage)}
+                    onPageChange={(page) => setCurrentPage(page)}
+                />
+            )}
+
             <ManualModal
                 isOpen={showManual}
                 onClose={() => setShowManual(false)}
                 title="Manual de Usuario - Presupuestos"
                 sections={manualSections}
             />
-        </div>
+        </div >
     );
 };
 

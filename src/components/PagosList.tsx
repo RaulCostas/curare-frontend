@@ -14,7 +14,7 @@ const PagosList: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [showManual, setShowManual] = useState(false);
-    const itemsPerPage = 5;
+    const itemsPerPage = 10;
 
     const manualSections: ManualSection[] = [
         {
@@ -295,7 +295,7 @@ const PagosList: React.FC = () => {
 
             {/* Record Count Indicator */}
             <div className="mb-4 text-gray-600 dark:text-gray-400 font-medium">
-                Mostrando {currentItems.length} de {filteredPagos.length} registros
+                Mostrando {filteredPagos.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filteredPagos.length)} de {filteredPagos.length} registros
             </div>
 
             <div className="overflow-x-auto">

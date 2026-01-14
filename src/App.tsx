@@ -29,6 +29,8 @@ import SeguimientoTrabajoComponent from './components/SeguimientoTrabajo';
 import PacienteList from './components/PacienteList';
 import PacienteForm from './components/PacienteForm';
 import CategoriaPacienteList from './components/CategoriaPacienteList';
+import PersonalTipoList from './components/PersonalTipoList';
+import PersonalTipoForm from './components/PersonalTipoForm';
 import CategoriaPacienteForm from './components/CategoriaPacienteForm';
 import PresupuestoList from './components/PresupuestoList';
 import PresupuestoForm from './components/PresupuestoForm';
@@ -48,6 +50,7 @@ import ChatbotConfig from './components/ChatbotConfig';
 import FormaPagoList from './components/FormaPagoList';
 import FormaPagoForm from './components/FormaPagoForm';
 import GrupoInventarioList from './components/GrupoInventarioList';
+import GrupoInventarioForm from './components/GrupoInventarioForm';
 import InventarioList from './components/InventarioList';
 import InventarioForm from './components/InventarioForm';
 import VacacionesList from './components/VacacionesList';
@@ -80,6 +83,12 @@ import EstadisticasProductos from './components/EstadisticasProductos';
 import EstadisticasUtilidades from './components/EstadisticasUtilidades';
 import RecetarioList from './components/RecetarioList';
 import RecetarioForm from './components/RecetarioForm';
+import RecordatorioList from './components/RecordatorioList';
+import RecordatorioForm from './components/RecordatorioForm';
+import ContactosList from './components/ContactosList';
+import ContactosForm from './components/ContactosForm';
+import BackupManager from './components/BackupManager';
+import MusicaTelevisionView from './components/MusicaTelevisionView';
 
 
 import { ThemeProvider } from './context/ThemeContext';
@@ -107,6 +116,7 @@ function App() {
                                     <Route path="/users/edit/:id" element={<UserForm />} />
                                     <Route path="/configuration" element={<Configuration />} />
                                     <Route path="/configuration/chatbot" element={<ChatbotConfig />} />
+                                    <Route path="/backup" element={<BackupManager />} />
                                     <Route path="/correos" element={<CorreosList />} />
                                 </Route>
 
@@ -188,6 +198,9 @@ function App() {
                                     <Route path="/pacientes/edit/:id" element={<PacienteForm />} />
                                     <Route path="/pacientes-pendientes" element={<PacientesPendientes />} />
                                     <Route path="/categoria-paciente" element={<CategoriaPacienteList />} />
+                                    <Route path="/personal-tipo" element={<PersonalTipoList />} />
+                                    <Route path="/personal-tipo/create" element={<PersonalTipoForm />} />
+                                    <Route path="/personal-tipo/edit/:id" element={<PersonalTipoForm />} />
                                     <Route path="/categoria-paciente/create" element={<CategoriaPacienteForm />} />
                                     <Route path="/categoria-paciente/edit/:id" element={<CategoriaPacienteForm />} />
                                     <Route path="/pacientes/:id/historia-clinica" element={<HistoriaClinica />} />
@@ -228,6 +241,8 @@ function App() {
                                 {/* Inventario */}
                                 <Route element={<ProtectedRoute moduleId="inventario" />}>
                                     <Route path="/grupo-inventario" element={<GrupoInventarioList />} />
+                                    <Route path="/grupo-inventario/create" element={<GrupoInventarioForm />} />
+                                    <Route path="/grupo-inventario/edit/:id" element={<GrupoInventarioForm />} />
                                     <Route path="/inventario" element={<InventarioList />} />
                                     <Route path="/pedidos" element={<PedidosList />} />
                                     <Route path="/pedidos/deudas" element={<DeudasPedidos />} />
@@ -246,6 +261,19 @@ function App() {
                                 <Route path="/estadisticas/pacientes-nuevos" element={<EstadisticasPacientesNuevos />} />
                                 <Route path="/estadisticas/productos" element={<EstadisticasProductos />} />
                                 <Route path="/estadisticas/utilidades" element={<EstadisticasUtilidades />} />
+
+                                {/* Recordatorios */}
+                                <Route path="/recordatorio" element={<RecordatorioList />} />
+                                <Route path="/recordatorio/create" element={<RecordatorioForm />} />
+                                <Route path="/recordatorio/edit/:id" element={<RecordatorioForm />} />
+
+                                {/* Contactos */}
+                                <Route path="/contactos" element={<ContactosList />} />
+                                <Route path="/contactos/create" element={<ContactosForm />} />
+                                <Route path="/contactos/edit/:id" element={<ContactosForm />} />
+
+                                {/* Música / Televisión */}
+                                <Route path="/musica-television" element={<MusicaTelevisionView />} />
                             </Route>
 
                         </Routes>

@@ -106,7 +106,7 @@ const PermisosModal: React.FC<PermisosModalProps> = ({ user, isOpen, onClose, on
                 { id: 'config-especialidad', label: ' - Especialidades' },
                 { id: 'config-forma-pago', label: ' - Formas de Pago' },
                 { id: 'config-grupos', label: ' - Grupos Inventario' },
-                { id: 'config-general', label: ' - General' },
+                { id: 'config-area-personal', label: ' - Área del Personal' },
             ]
         },
         {
@@ -122,16 +122,16 @@ const PermisosModal: React.FC<PermisosModalProps> = ({ user, isOpen, onClose, on
     ];
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-lg shadow-xl w-[90%] max-w-2xl max-h-[90vh] overflow-y-auto">
-                <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-xl font-bold text-gray-800">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-2 sm:p-4">
+            <div className="bg-white p-4 sm:p-6 rounded-lg shadow-xl w-full max-w-2xl max-h-[95vh] overflow-y-auto">
+                <div className="flex justify-between items-center mb-4 sm:mb-6">
+                    <h3 className="text-lg sm:text-xl font-bold text-gray-800">
                         Restricciones de Acceso: <span className="text-blue-600">{user.name}</span>
                     </h3>
 
                 </div>
 
-                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 sm:p-4 mb-4 sm:mb-6">
                     <div className="flex">
                         <div className="flex-shrink-0">
                             <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
@@ -139,7 +139,7 @@ const PermisosModal: React.FC<PermisosModalProps> = ({ user, isOpen, onClose, on
                             </svg>
                         </div>
                         <div className="ml-3">
-                            <p className="text-sm text-yellow-700">
+                            <p className="text-xs sm:text-sm text-yellow-700">
                                 Marque las casillas de los módulos que desea <strong>DENEGAR (Restringir)</strong> a este usuario.
                                 <br />
                                 <span className="text-xs text-gray-500">* Si la casilla está marcada, el usuario NO podrá ver ese módulo.</span>
@@ -148,20 +148,20 @@ const PermisosModal: React.FC<PermisosModalProps> = ({ user, isOpen, onClose, on
                     </div>
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                     {sections.map(section => (
-                        <div key={section.title} className="bg-gray-50 p-4 rounded-lg">
-                            <h4 className="font-bold text-gray-700 mb-3 border-b pb-2">{section.title}</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div key={section.title} className="bg-gray-50 p-3 sm:p-4 rounded-lg">
+                            <h4 className="font-bold text-sm sm:text-base text-gray-700 mb-2 sm:mb-3 border-b pb-2">{section.title}</h4>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                                 {section.items.map(item => (
-                                    <label key={item.id} className="flex items-center space-x-3 cursor-pointer p-2 hover:bg-gray-100 rounded transition-colors">
+                                    <label key={item.id} className="flex items-center space-x-2 sm:space-x-3 cursor-pointer p-2 hover:bg-gray-100 rounded transition-colors">
                                         <input
                                             type="checkbox"
                                             checked={permisos.includes(item.id)}
                                             onChange={() => handleToggle(item.id)}
-                                            className="form-checkbox h-5 w-5 text-red-600 rounded focus:ring-red-500 border-gray-300 transition duration-150 ease-in-out"
+                                            className="form-checkbox h-4 w-4 sm:h-5 sm:w-5 text-red-600 rounded focus:ring-red-500 border-gray-300 transition duration-150 ease-in-out"
                                         />
-                                        <span className={`text-sm ${permisos.includes(item.id) ? 'text-red-700 font-medium' : 'text-gray-700'}`}>
+                                        <span className={`text-xs sm:text-sm ${permisos.includes(item.id) ? 'text-red-700 font-medium' : 'text-gray-700'}`}>
                                             {item.label}
                                         </span>
                                     </label>
@@ -171,17 +171,17 @@ const PermisosModal: React.FC<PermisosModalProps> = ({ user, isOpen, onClose, on
                     ))}
                 </div>
 
-                <div className="mt-8 flex justify-end gap-3 border-t pt-4">
+                <div className="mt-6 sm:mt-8 flex flex-wrap justify-end gap-2 sm:gap-3 border-t pt-3 sm:pt-4">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
+                        className="px-3 sm:px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors text-sm sm:text-base"
                     >
                         Cancelar
                     </button>
                     <button
                         onClick={handleSave}
                         disabled={loading}
-                        className={`px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors flex items-center ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                        className={`px-3 sm:px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors flex items-center text-sm sm:text-base ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
                     >
                         {loading && (
                             <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">

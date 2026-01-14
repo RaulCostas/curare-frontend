@@ -151,22 +151,21 @@ const EstadisticasModal: React.FC<EstadisticasModalProps> = ({ isOpen, onClose }
     const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                    <h3 className="text-2xl font-bold text-gray-800 dark:text-white">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-2 sm:p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[95vh] overflow-y-auto">
+                <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                    <h3 className="text-lg sm:text-2xl font-bold text-gray-800 dark:text-white">
                         Estadísticas de Calificaciones
                     </h3>
                     <button
                         onClick={onClose}
-                        className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-semibold py-2 px-4 rounded transition-colors"
-                    >
+                        className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-semibold py-2 px-3 sm:px-4 rounded transition-colors text-sm sm:text-base">
                         Cerrar
                     </button>
                 </div>
 
-                <div className="p-6 space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                 Personal
@@ -237,10 +236,10 @@ const EstadisticasModal: React.FC<EstadisticasModalProps> = ({ isOpen, onClose }
                         </div>
                     </div>
 
-                    <div className="flex justify-center mt-4">
+                    <div className="flex justify-center mt-3 sm:mt-4">
                         <button
                             onClick={handleConsultar}
-                            className="w-auto px-8 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
+                            className="w-auto px-6 sm:px-8 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 sm:py-3 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -249,7 +248,7 @@ const EstadisticasModal: React.FC<EstadisticasModalProps> = ({ isOpen, onClose }
                         </button>
                     </div>
 
-                    <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+                    <div className="border-t border-gray-200 dark:border-gray-700 pt-4 sm:pt-6">
                         {renderPieChart()}
                     </div>
                 </div>

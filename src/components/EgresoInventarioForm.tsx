@@ -72,19 +72,19 @@ const EgresoInventarioForm: React.FC<EgresoInventarioFormProps> = ({ inventario,
     };
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-6 relative">
-                <h3 className="text-2xl font-bold mb-6 text-[#1a202c] dark:text-white">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-2 sm:p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-4 sm:p-6 relative max-h-[95vh] overflow-y-auto">
+                <h3 className="text-lg sm:text-2xl font-bold mb-4 sm:mb-6 text-[#1a202c] dark:text-white">
                     {egresoToEdit ? 'Editar Egreso:' : 'Egreso de:'} <span className="text-[#3498db] dark:text-[#5dade2]">{inventario.descripcion}</span>
                 </h3>
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
                     <div>
                         <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Fecha</label>
                         <input
                             type="date"
                             value={formData.fecha}
                             onChange={(e) => setFormData({ ...formData, fecha: e.target.value })}
-                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3498db] transition duration-200 bg-white dark:bg-gray-700 dark:text-white"
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3498db] transition duration-200 bg-white dark:bg-gray-700 dark:text-white text-sm"
                             required
                         />
                     </div>
@@ -98,7 +98,7 @@ const EgresoInventarioForm: React.FC<EgresoInventarioFormProps> = ({ inventario,
                                 type="number"
                                 value={formData.cantidad}
                                 onChange={(e) => setFormData({ ...formData, cantidad: Number(e.target.value) })}
-                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3498db] transition duration-200 text-gray-900 dark:text-white bg-white dark:bg-gray-700"
+                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3498db] transition duration-200 text-gray-900 dark:text-white bg-white dark:bg-gray-700 text-sm"
                                 style={{ paddingLeft: '35px' }}
                                 required
                             />
@@ -115,7 +115,7 @@ const EgresoInventarioForm: React.FC<EgresoInventarioFormProps> = ({ inventario,
                                 type="text"
                                 value={formData.consultorio}
                                 onChange={(e) => setFormData({ ...formData, consultorio: e.target.value })}
-                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3498db] transition duration-200 text-gray-900 dark:text-white bg-white dark:bg-gray-700"
+                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3498db] transition duration-200 text-gray-900 dark:text-white bg-white dark:bg-gray-700 text-sm"
                                 style={{ paddingLeft: '35px' }}
                                 required
                             />
@@ -133,7 +133,7 @@ const EgresoInventarioForm: React.FC<EgresoInventarioFormProps> = ({ inventario,
                             <select
                                 value={formData.fecha_vencimiento}
                                 onChange={(e) => setFormData({ ...formData, fecha_vencimiento: e.target.value })}
-                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3498db] transition duration-200 text-gray-900 dark:text-white appearance-none bg-white dark:bg-gray-700"
+                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3498db] transition duration-200 text-gray-900 dark:text-white appearance-none bg-white dark:bg-gray-700 text-sm"
                                 style={{ paddingLeft: '35px' }}
                             >
                                 <option value="">Sin lote específico (Opcional)</option>
@@ -148,11 +148,11 @@ const EgresoInventarioForm: React.FC<EgresoInventarioFormProps> = ({ inventario,
                             </div>
                         </div>
                     </div>
-                    <div className="flex justify-end gap-2 mt-6">
-                        <button type="button" onClick={onClose} className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-all transform hover:-translate-y-0.5 flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg> Cancelar</button>
-                        <button type="submit" className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold shadow-md transition-all transform hover:-translate-y-0.5 flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <div className="flex flex-wrap justify-end gap-2 mt-4 sm:mt-6">
+                        <button type="button" onClick={onClose} className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg shadow-md transition-all transform hover:-translate-y-0.5 flex items-center gap-2 text-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg> Cancelar</button>
+                        <button type="submit" className="px-3 sm:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold shadow-md transition-all transform hover:-translate-y-0.5 flex items-center gap-2 text-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" className="sm:w-[18px] sm:h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
                                 <polyline points="17 21 17 13 7 13 7 21"></polyline>
                                 <polyline points="7 3 7 8 15 8"></polyline>

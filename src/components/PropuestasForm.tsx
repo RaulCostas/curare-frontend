@@ -245,6 +245,19 @@ const PropuestasForm: React.FC = () => {
     const handleSubmit = async () => {
         if (!paciente) return;
 
+        // Validate nota field
+        if (!nota || nota.trim() === '') {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Campo Requerido',
+                text: 'Por favor, ingrese una nota o comentario para la propuesta.',
+                confirmButtonText: 'OK',
+                background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#fff',
+                color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#000',
+            });
+            return;
+        }
+
         try {
             const payload = {
                 pacienteId: paciente.id,
@@ -684,6 +697,7 @@ const PropuestasForm: React.FC = () => {
                             value={nota}
                             onChange={(e) => setNota(e.target.value)}
                             disabled={isReadOnly}
+                            required
                             className="w-full h-32 px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-800 dark:text-gray-200 resize-none transition-colors"
                             placeholder="Ingrese una nota o comentario general para la propuesta..."
                         />

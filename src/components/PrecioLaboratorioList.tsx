@@ -15,7 +15,7 @@ const PrecioLaboratorioList: React.FC = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(0);
     const [totalRecords, setTotalRecords] = useState(0);
-    const limit = 5;
+    const limit = 10;
     const navigate = useNavigate();
 
     const [showManual, setShowManual] = useState(false);
@@ -716,7 +716,7 @@ const PrecioLaboratorioList: React.FC = () => {
             </div>
 
             <div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-                Mostrando {precios.length} de {totalRecords} resultados
+                Mostrando {totalRecords === 0 ? 0 : (currentPage - 1) * limit + 1} - {Math.min(currentPage * limit, totalRecords)} de {totalRecords} resultados
             </div>
 
             <div className="overflow-x-auto rounded-lg shadow-md border border-gray-200 dark:border-gray-700">

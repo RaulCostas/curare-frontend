@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import api from '../services/api';
-import type { Doctor, Especialidad, Proforma, Arancel, HistoriaClinica } from '../types';
+import type { Doctor, Especialidad, Proforma, Arancel, HistoriaClinica, Personal } from '../types';
 import Swal from 'sweetalert2';
 import ManualModal, { type ManualSection } from './ManualModal';
 
@@ -33,7 +33,7 @@ const HistoriaClinicaForm: React.FC<HistoriaClinicaFormProps> = ({
         observaciones: '',
         especialidadId: 0,
         doctorId: 0,
-        asistente: '',
+        personalId: 0,
         estadoTratamiento: 'no terminado',
         estadoPresupuesto: 'no terminado',
         proformaId: 0,
@@ -45,7 +45,10 @@ const HistoriaClinicaForm: React.FC<HistoriaClinicaFormProps> = ({
         hoja: 0
     });
 
+    const [historiaClinica, setHistoriaClinica] = useState<HistoriaClinica[]>([]);
+
     const [doctors, setDoctors] = useState<Doctor[]>([]);
+    const [asistentes, setAsistentes] = useState<Personal[]>([]);
     const [especialidades, setEspecialidades] = useState<Especialidad[]>([]);
     const [allTreatments, setAllTreatments] = useState<Arancel[]>([]);
     const [showManual, setShowManual] = useState(false);
@@ -71,9 +74,13 @@ const HistoriaClinicaForm: React.FC<HistoriaClinicaFormProps> = ({
 
 
     useEffect(() => {
-        fetchDoctors();
-        fetchEspecialidades();
-        fetchTreatments();
+        if (pacienteId) {
+            fetchDoctors();
+            fetchAsistentes();
+            fetchEspecialidades();
+            fetchTreatments();
+            fetchHistory();
+        }
     }, [pacienteId]);
 
     // Derive available treatments from the CURRENTLY selected proforma in the form
@@ -129,7 +136,7 @@ const HistoriaClinicaForm: React.FC<HistoriaClinicaFormProps> = ({
                 observaciones: historiaToEdit.observaciones || '',
                 especialidadId: historiaToEdit.especialidadId || 0,
                 doctorId: historiaToEdit.doctorId || 0,
-                asistente: historiaToEdit.asistente || '',
+                personalId: historiaToEdit.personalId || 0,
                 estadoTratamiento: historiaToEdit.estadoTratamiento,
                 estadoPresupuesto: historiaToEdit.estadoPresupuesto,
                 proformaId: historiaToEdit.proformaId || 0,
@@ -152,6 +159,29 @@ const HistoriaClinicaForm: React.FC<HistoriaClinicaFormProps> = ({
             setDoctors(activeDoctors);
         } catch (error) {
             console.error('Error fetching doctors:', error);
+        }
+    };
+
+    const fetchHistory = async () => {
+        try {
+            const response = await api.get(`/historia-clinica/paciente/${pacienteId}`);
+            setHistoriaClinica(response.data || []);
+        } catch (error) {
+            console.error('Error fetching history:', error);
+        }
+    };
+
+    const fetchAsistentes = async () => {
+        try {
+            const response = await api.get('/personal?limit=100');
+            // Filtramos por personal activo y que sea del área 'Clínica' (Igual que en Agenda)
+            const activeAsistentes = (response.data.data || []).filter((p: Personal) =>
+                p.personalTipo?.area === 'Clínica' && p.estado === 'activo'
+            );
+            console.log('Asistentes filtrados (Clínica + activo):', activeAsistentes);
+            setAsistentes(activeAsistentes);
+        } catch (error) {
+            console.error('Error fetching asistentes:', error);
         }
     };
 
@@ -265,7 +295,7 @@ const HistoriaClinicaForm: React.FC<HistoriaClinicaFormProps> = ({
             observaciones: '',
             especialidadId: 0,
             doctorId: 0,
-            asistente: '',
+            personalId: 0,
             estadoTratamiento: 'no terminado',
             estadoPresupuesto: 'no terminado',
             proformaId: selectedProformaId || 0,
@@ -287,6 +317,7 @@ const HistoriaClinicaForm: React.FC<HistoriaClinicaFormProps> = ({
                 pacienteId,
                 especialidadId: formData.especialidadId || null,
                 doctorId: formData.doctorId || null,
+                personalId: formData.personalId || null,
                 proformaId: formData.proformaId || null,
                 proformaDetalleId: formData.proformaDetalleId || null,
             };
@@ -413,9 +444,43 @@ const HistoriaClinicaForm: React.FC<HistoriaClinicaFormProps> = ({
                             >
                                 <option value="" hidden>-- Seleccione Tratamiento --</option>
                                 {formData.proformaId ? (
-                                    currentProformaDetails.map(t => (
-                                        <option key={t.id} value={t.id}>{t.arancel?.detalle}</option>
-                                    ))
+                                    currentProformaDetails.map(t => {
+                                        let isCompleted = false;
+
+                                        if (t.piezas) {
+                                            const allPiezas = t.piezas.split('/').map((p: string) => p.trim());
+                                            const completedPieces: string[] = [];
+                                            historiaClinica.forEach(h => {
+                                                if (h.proformaDetalleId === t.id &&
+                                                    h.estadoTratamiento === 'terminado' &&
+                                                    h.pieza) {
+                                                    const pieces = h.pieza.split('/').map((p: string) => p.trim());
+                                                    completedPieces.push(...pieces);
+                                                }
+                                            });
+                                            isCompleted = allPiezas.length > 0 && allPiezas.every((p: string) => completedPieces.includes(p));
+                                        } else {
+                                            isCompleted = historiaClinica.some(h =>
+                                                h.proformaDetalleId === t.id &&
+                                                h.estadoTratamiento === 'terminado'
+                                            );
+                                        }
+
+                                        return (
+                                            <option
+                                                key={t.id}
+                                                value={t.id}
+                                                style={isCompleted ? {
+                                                    color: '#16a34a', // Green
+                                                    fontWeight: 'bold'
+                                                } : undefined}
+                                            >
+                                                {t.arancel?.detalle}
+                                                {t.piezas ? ` - Piezas: ${t.piezas}` : ''}
+                                                {isCompleted ? ' (Completado)' : ''}
+                                            </option>
+                                        );
+                                    })
                                 ) : (
                                     <option value="" hidden>Seleccione un Plan de Tratamiento primero</option>
                                 )}
@@ -527,13 +592,17 @@ const HistoriaClinicaForm: React.FC<HistoriaClinicaFormProps> = ({
                                     <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                                 </svg>
                             </div>
-                            <input
-                                type="text"
-                                name="asistente"
-                                value={formData.asistente}
+                            <select
+                                name="personalId"
+                                value={formData.personalId}
                                 onChange={handleChange}
                                 className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-gray-100"
-                            />
+                            >
+                                <option value={0}>-- Seleccione --</option>
+                                {asistentes.map(a => (
+                                    <option key={a.id} value={a.id}>{a.paterno} {a.materno} {a.nombre}</option>
+                                ))}
+                            </select>
                         </div>
                     </div>
 

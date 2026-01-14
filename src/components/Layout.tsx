@@ -27,46 +27,54 @@ const Layout: React.FC = () => {
     // Permission Logic
     const [permisos, setPermisos] = useState<string[]>([]);
 
-    useEffect(() => {
-        const fetchUserData = async () => {
-            const userStr = localStorage.getItem('user');
-            if (userStr) {
+    const fetchUserData = async () => {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+            try {
+                // Try to parse just to get ID, but always fetch fresh from API
+                const localUser = JSON.parse(userStr);
+
+                if (localUser && localUser.id) {
+                    const response = await api.get(`/users/${localUser.id}`);
+                    const freshUser = response.data;
+
+                    setCurrentUser(freshUser);
+
+                    // Update permissions
+                    const freshPermisos = (freshUser && Array.isArray(freshUser.permisos)) ? freshUser.permisos : [];
+                    setPermisos(freshPermisos);
+
+                    // Update localStorage to keep it in sync
+                    localStorage.setItem('user', JSON.stringify(freshUser));
+                }
+            } catch (error) {
+                console.error('Error fetching user data:', error);
+                // Fallback to local storage if API fails, but be careful
                 try {
                     const user = JSON.parse(userStr);
-                    if (user) {
-                        const safePermisos = Array.isArray(user.permisos) ? user.permisos : [];
-                        setPermisos(safePermisos);
-                        const response = await api.get(`/users/${user.id}`);
-                        setCurrentUser(response.data);
-                        const freshPermisos = (response.data && Array.isArray(response.data.permisos)) ? response.data.permisos : [];
-                        setPermisos(freshPermisos);
-                        localStorage.setItem('user', JSON.stringify(response.data));
-                    } else {
-                        // Handle null user from storage
-                        setCurrentUser(null);
-                        setPermisos([]);
-                    }
-                } catch (error) {
-                    console.error('Error fetching user data:', error);
-                    try {
-                        const user = JSON.parse(userStr);
-                        if (user) {
-                            const safePermisos = Array.isArray(user.permisos) ? user.permisos : [];
-                            setCurrentUser(user);
-                            setPermisos(safePermisos);
-                        } else {
-                            setCurrentUser(null);
-                            setPermisos([]);
-                        }
-                    } catch (e) {
-                        setCurrentUser(null);
-                        setPermisos([]);
-                    }
+                    setCurrentUser(user);
+                    setPermisos(Array.isArray(user.permisos) ? user.permisos : []);
+                } catch (e) {
+                    setCurrentUser(null);
+                    setPermisos([]);
                 }
             }
+        }
+    };
+
+    useEffect(() => {
+        fetchUserData();
+
+        // Listen for user updates (e.g. photo change)
+        const handleUserUpdate = () => {
+            fetchUserData();
         };
 
-        fetchUserData();
+        window.addEventListener('user-updated', handleUserUpdate);
+
+        return () => {
+            window.removeEventListener('user-updated', handleUserUpdate);
+        };
     }, []);
 
     const hasAccess = (moduleId: string) => {
@@ -862,7 +870,7 @@ const Layout: React.FC = () => {
                         {hasAccess('configuracion') && (
                             <li className="nav-item">
                                 <div
-                                    className={`nav-link ${isConfigOpen || isActive('/configuration') || isActive('/comision-tarjeta') || isActive('/especialidad') || isActive('/categoria-paciente') || isActive('/forma-pago') || isActive('/grupo-inventario') ? 'active' : ''}`}
+                                    className={`nav-link ${isConfigOpen || isActive('/configuration') || isActive('/comision-tarjeta') || isActive('/especialidad') || isActive('/categoria-paciente') || isActive('/forma-pago') || isActive('/grupo-inventario') || isActive('/musica-television') ? 'active' : ''}`}
                                     onClick={() => setIsConfigOpen(!isConfigOpen)}
                                     style={{ cursor: 'pointer', justifyContent: 'space-between' }}
                                 >
@@ -890,6 +898,24 @@ const Layout: React.FC = () => {
                                 </div>
                                 {isConfigOpen && (
                                     <ul className="submenu-list" style={{ paddingLeft: '20px', listStyle: 'none', background: 'rgba(0,0,0,0.05)' }}>
+                                        {hasAccess('personal_tipo') && (
+                                            <li className="nav-item">
+                                                <Link
+                                                    to="/personal-tipo"
+                                                    className={`nav-link ${isActive('/personal-tipo')}`}
+                                                    onClick={closeSidebar}
+                                                    style={{ fontSize: '0.9em' }}
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '10px' }}>
+                                                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                                        <circle cx="9" cy="7" r="4"></circle>
+                                                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                                                    </svg>
+                                                    Área del Personal
+                                                </Link>
+                                            </li>
+                                        )}
                                         {hasAccess('config-categorias') && (
                                             <li className="nav-item">
                                                 <Link
@@ -988,6 +1014,36 @@ const Layout: React.FC = () => {
                                                 </Link>
                                             </li>
                                         )}
+                                        {hasAccess('config-musica-television') && (
+                                            <li className="nav-item">
+                                                <Link
+                                                    to="/musica-television"
+                                                    className={`nav-link ${isActive('/musica-television')}`}
+                                                    onClick={closeSidebar}
+                                                    style={{ fontSize: '0.9em' }}
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '10px' }}>
+                                                        <path d="M9 18V5l12-2v13"></path>
+                                                        <circle cx="6" cy="18" r="3"></circle>
+                                                        <circle cx="18" cy="16" r="3"></circle>
+                                                    </svg>
+                                                    Música / Televisión
+                                                </Link>
+                                            </li>
+                                        )}
+                                        <li className="nav-item">
+                                            <Link
+                                                to="/backup"
+                                                className={`nav-link ${isActive('/backup')}`}
+                                                onClick={closeSidebar}
+                                                style={{ fontSize: '0.9em' }}
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '10px' }}>
+                                                    <path d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                                                </svg>
+                                                Backup
+                                            </Link>
+                                        </li>
                                     </ul>
                                 )}
                             </li>

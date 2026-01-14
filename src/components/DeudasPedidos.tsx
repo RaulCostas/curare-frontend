@@ -93,7 +93,7 @@ const DeudasPedidos: React.FC = () => {
             </div>
 
             <div className="mb-4 text-sm text-gray-600 dark:text-gray-400 no-print">
-                Mostrando {currentItems.length} de {filteredDeudas.length} registros
+                Mostrando {filteredDeudas.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filteredDeudas.length)} de {filteredDeudas.length} registros
             </div>
 
             {/* Table */}

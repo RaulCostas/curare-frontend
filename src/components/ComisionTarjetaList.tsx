@@ -406,7 +406,7 @@ const ComisionTarjetaList: React.FC = () => {
 
             {/* Results Count */}
             <div className="mb-4 text-sm text-gray-600 dark:text-gray-400 no-print">
-                Mostrando {currentItems.length} de {filteredComisiones.length} registros
+                Mostrando {filteredComisiones.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filteredComisiones.length)} de {filteredComisiones.length} registros
             </div>
 
             <div className="overflow-x-auto shadow-sm rounded-lg">

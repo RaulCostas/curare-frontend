@@ -174,7 +174,7 @@ const CubetasList: React.FC = () => {
             const logoUrl = '/logo-curare.png';
             let logoDataUrl: string | null = null;
             try {
-                logoDataUrl = await new Promise((resolve, reject) => {
+                logoDataUrl = await new Promise((resolve) => {
                     const img = new Image();
                     img.src = logoUrl;
                     img.onload = () => {
@@ -597,7 +597,7 @@ const CubetasList: React.FC = () => {
             </div>
 
             <div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-                Mostrando {cubetas.length} de {totalRecords} resultados
+                Mostrando {totalRecords === 0 ? 0 : (currentPage - 1) * limit + 1} - {Math.min(currentPage * limit, totalRecords)} de {totalRecords} resultados
             </div>
 
             <div className="overflow-x-auto rounded-lg shadow-md border border-gray-200 dark:border-gray-700">

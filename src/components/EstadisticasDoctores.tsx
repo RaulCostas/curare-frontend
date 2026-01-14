@@ -9,11 +9,20 @@ interface DoctorStat {
 }
 
 const EstadisticasDoctores: React.FC = () => {
-    const currentYear = new Date().getFullYear();
-    const currentMonth = new Date().getMonth() + 1;
+    // Get first and last day of current month as default
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-    const [year, setYear] = useState<number>(currentYear);
-    const [month, setMonth] = useState<number>(currentMonth);
+    const formatDate = (date: Date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    const [fechaInicio, setFechaInicio] = useState<string>(formatDate(firstDay));
+    const [fechaFinal, setFechaFinal] = useState<string>(formatDate(lastDay));
     const [status, setStatus] = useState<string>('activo');
     const [loading, setLoading] = useState<boolean>(false);
     const [stats, setStats] = useState<DoctorStat[]>([]);
@@ -26,7 +35,7 @@ const EstadisticasDoctores: React.FC = () => {
         },
         {
             title: 'Filtros',
-            content: 'Puede filtrar por Año, Mes y Estado del doctor (Activo/Inactivo) para refinar los resultados.'
+            content: 'Puede filtrar por rango de fechas (Fecha Inicio y Fecha Final) y Estado del doctor (Activo/Inactivo) para refinar los resultados.'
         },
         {
             title: 'Gráfico',
@@ -34,27 +43,13 @@ const EstadisticasDoctores: React.FC = () => {
         }
     ];
 
-    const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
-    const months = [
-        { value: 1, label: 'Enero' },
-        { value: 2, label: 'Febrero' },
-        { value: 3, label: 'Marzo' },
-        { value: 4, label: 'Abril' },
-        { value: 5, label: 'Mayo' },
-        { value: 6, label: 'Junio' },
-        { value: 7, label: 'Julio' },
-        { value: 8, label: 'Agosto' },
-        { value: 9, label: 'Septiembre' },
-        { value: 10, label: 'Octubre' },
-        { value: 11, label: 'Noviembre' },
-        { value: 12, label: 'Diciembre' },
-    ];
+
 
     const fetchData = async () => {
         setLoading(true);
         try {
             const response = await api.get('/doctors/statistics', {
-                params: { year, month, status }
+                params: { fechaInicio, fechaFinal, status }
             });
             setStats(response.data);
         } catch (error) {
@@ -106,15 +101,14 @@ const EstadisticasDoctores: React.FC = () => {
             {/* Filters */}
             <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow mb-6 flex flex-wrap gap-4 items-end">
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Año</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha Inicio</label>
                     <div className="relative">
-                        <select
-                            value={year}
-                            onChange={(e) => setYear(Number(e.target.value))}
-                            className="border border-gray-300 dark:border-gray-600 rounded-lg p-2 pl-10 min-w-[100px] w-full appearance-none bg-white dark:bg-gray-700 text-gray-700 dark:text-white shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                        >
-                            {years.map(y => <option key={y} value={y}>{y}</option>)}
-                        </select>
+                        <input
+                            type="date"
+                            value={fechaInicio}
+                            onChange={(e) => setFechaInicio(e.target.value)}
+                            className="border border-gray-300 dark:border-gray-600 rounded-lg p-2 pl-10 min-w-[180px] w-full bg-white dark:bg-gray-700 text-gray-700 dark:text-white shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                        />
                         <svg className="w-5 h-5 text-gray-400 absolute left-3 top-2.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                         </svg>
@@ -122,17 +116,16 @@ const EstadisticasDoctores: React.FC = () => {
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Mes</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha Final</label>
                     <div className="relative">
-                        <select
-                            value={month}
-                            onChange={(e) => setMonth(Number(e.target.value))}
-                            className="border border-gray-300 dark:border-gray-600 rounded-lg p-2 pl-10 min-w-[150px] w-full appearance-none bg-white dark:bg-gray-700 text-gray-700 dark:text-white shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                        >
-                            {months.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-                        </select>
+                        <input
+                            type="date"
+                            value={fechaFinal}
+                            onChange={(e) => setFechaFinal(e.target.value)}
+                            className="border border-gray-300 dark:border-gray-600 rounded-lg p-2 pl-10 min-w-[180px] w-full bg-white dark:bg-gray-700 text-gray-700 dark:text-white shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                        />
                         <svg className="w-5 h-5 text-gray-400 absolute left-3 top-2.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                         </svg>
                     </div>
                 </div>

@@ -1101,7 +1101,7 @@ const InventarioList: React.FC = () => {
             </div>
 
             <div className="mb-2 text-gray-600 dark:text-gray-400 text-sm">
-                Mostrando {items.length} de {total} resultados
+                Mostrando {total === 0 ? 0 : (currentPage - 1) * limit + 1} - {Math.min(currentPage * limit, total)} de {total} resultados
             </div>
 
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">

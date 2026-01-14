@@ -27,7 +27,7 @@ const UserList: React.FC = () => {
     const [totalPages, setTotalPages] = useState(1);
     const [total, setTotal] = useState(0); // Fixed variable name from 'total' to match state if needed, but it seems correct.
     const [showManual, setShowManual] = useState(false);
-    const limit = 5;
+    const limit = 10;
 
     const manualSections: ManualSection[] = [
         {
@@ -117,8 +117,9 @@ const UserList: React.FC = () => {
 
     const handleStatusChange = async (user: User) => {
         try {
-            // Assuming 'estado' can be toggled between 'Activo' and 'Inactivo'
-            const newStatus = user.estado === 'Activo' ? 'Inactivo' : 'Activo';
+            // Assuming 'estado' can be toggled between 'activo' and 'inactivo' (case-insensitive)
+            const isActive = user.estado?.toLowerCase() === 'activo';
+            const newStatus = isActive ? 'inactivo' : 'activo';
             await api.patch(`/users/${user.id}/status`, { estado: newStatus });
             setUsers(
                 users.map((u) =>
@@ -128,7 +129,7 @@ const UserList: React.FC = () => {
             Swal.fire({
                 icon: 'success',
                 title: 'Estado Actualizado',
-                text: `Usuario ${newStatus === 'Activo' ? 'activado' : 'desactivado'} correctamente`,
+                text: `Usuario ${!isActive ? 'activado' : 'desactivado'} correctamente`,
                 timer: 1500,
                 showConfirmButton: false
             });
@@ -156,7 +157,7 @@ const UserList: React.FC = () => {
 
         if (result.isConfirmed) {
             try {
-                await api.patch(`/users/${user.id}`, { estado: 'Inactivo' });
+                await api.patch(`/users/${user.id}`, { estado: 'inactivo' });
                 await Swal.fire({
                     icon: 'success',
                     title: '¡Usuario dado de baja!',
@@ -189,7 +190,7 @@ const UserList: React.FC = () => {
 
         if (result.isConfirmed) {
             try {
-                await api.patch(`/users/${user.id}`, { estado: 'Activo' });
+                await api.patch(`/users/${user.id}`, { estado: 'activo' });
                 await Swal.fire({
                     icon: 'success',
                     title: '¡Usuario reactivado!',
@@ -445,7 +446,7 @@ const UserList: React.FC = () => {
                                     <td>${user.id}</td>
                                     <td>${user.name}</td>
                                     <td>${user.email}</td>
-                                    <td class="${user.estado === 'Activo' ? 'status-active' : 'status-inactive'}">
+                                    <td class="${user.estado?.toLowerCase() === 'activo' ? 'status-active' : 'status-inactive'}">
                                         ${user.estado}
                                     </td>
                                     <td>${user.recepcionista ? 'Si' : 'No'}</td>
@@ -559,7 +560,7 @@ const UserList: React.FC = () => {
             </div>
 
             <div className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                Mostrando {users.length} de {total} resultados
+                Mostrando {total === 0 ? 0 : (currentPage - 1) * limit + 1} - {Math.min(currentPage * limit, total)} de {total} resultados
             </div>
 
             <div className="overflow-x-auto">
@@ -592,7 +593,7 @@ const UserList: React.FC = () => {
                                 <td className="p-3 text-gray-700 dark:text-gray-300">
                                     <span
                                         onClick={() => handleStatusChange(user)}
-                                        className={`px-2 py-1 rounded text-sm font-medium cursor-pointer ${user.estado === 'Activo'
+                                        className={`px-2 py-1 rounded text-sm font-medium cursor-pointer ${user.estado?.toLowerCase() === 'activo'
                                             ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
                                             : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
                                             }`}
@@ -622,7 +623,7 @@ const UserList: React.FC = () => {
                                             <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                                         </svg>
                                     </button>
-                                    {user.estado === 'Activo' ? (
+                                    {user.estado?.toLowerCase() === 'activo' ? (
                                         <button
                                             onClick={() => handleDelete(user)}
                                             className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg shadow-md transition-all transform hover:-translate-y-0.5"

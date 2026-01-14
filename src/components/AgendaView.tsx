@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import './AgendaView.css'; // Import custom overrides
@@ -7,6 +8,7 @@ import type { Agenda, Paciente } from '../types';
 import AgendaForm from './AgendaForm';
 import Swal from 'sweetalert2';
 import ManualModal, { type ManualSection } from './ManualModal';
+import QuienAgendoModal from './QuienAgendoModal';
 
 import { getLocalDateString } from '../utils/dateUtils';
 
@@ -14,6 +16,7 @@ type ValuePiece = Date | null;
 type Value = ValuePiece | [ValuePiece, ValuePiece];
 
 const AgendaView: React.FC = () => {
+    const navigate = useNavigate();
     const [currentDate, setCurrentDate] = useState(getLocalDateString());
     const [dateValue, setDateValue] = useState<Value>(new Date());
     const [appointments, setAppointments] = useState<Agenda[]>([]);
@@ -31,6 +34,7 @@ const AgendaView: React.FC = () => {
     const [selectedPatientForHistory, setSelectedPatientForHistory] = useState<Paciente | null>(null);
 
     const [showManual, setShowManual] = useState(false);
+    const [showQuienAgendoModal, setShowQuienAgendoModal] = useState(false);
 
     const manualSections: ManualSection[] = [
         {
@@ -186,13 +190,17 @@ const AgendaView: React.FC = () => {
     const getAppointmentForSlot = (time: string, consultorio: number) => {
         return appointments.find(app => {
             const appTime = app.hora.substring(0, 5);
-            return appTime === time && app.consultorio === consultorio;
+            // Exclude cancelled appointments from blocking the slot
+            return appTime === time && app.consultorio === consultorio && app.estado !== 'cancelado';
         });
     };
 
     // Calculate which cells to skip rendering because they are covered by a rowspan
     const skipCells = new Set<string>();
     appointments.forEach(app => {
+        // Skip cancelled appointments - they don't block time slots
+        if (app.estado === 'cancelado') return;
+
         const duration = app.duracion || 30;
         const rowSpan = Math.ceil(duration / 30);
         if (rowSpan > 1) {
@@ -223,10 +231,10 @@ const AgendaView: React.FC = () => {
     // ... logic up to return
 
     return (
-        <div className="flex gap-5 h-[85vh] p-5">
+        <div className="flex flex-col md:flex-row gap-5 h-[85vh] p-2 md:p-5">
 
-            {/* Sidebar Calendar */}
-            <div className="w-[300px] flex-shrink-0 flex flex-col gap-5">
+            {/* Sidebar Calendar - Hidden on mobile */}
+            <div className="hidden md:flex w-[300px] flex-shrink-0 flex-col gap-5">
 
                 {/* Patient Search Widget */}
                 <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm relative border border-gray-100 dark:border-gray-700">
@@ -273,29 +281,68 @@ const AgendaView: React.FC = () => {
             </div>
 
             {/* Main Agenda Grid */}
-            <div className="flex-1 flex flex-col bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 z-10">
-                    <div className="flex items-center gap-4">
-                        <h2 className="m-0 text-xl font-bold text-gray-900 dark:text-white">AGENDA</h2>
+            <div className="flex-1 flex flex-col bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden min-w-0">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-2 sm:p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 z-10 gap-2">
+                    <div className="flex items-center gap-2 sm:gap-4">
+                        <h2 className="m-0 text-lg sm:text-xl font-bold text-gray-900 dark:text-white">AGENDA</h2>
                         <button
                             onClick={() => setShowManual(true)}
-                            className="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 w-8 h-8 rounded-full flex items-center justify-center transition-colors shadow-sm"
+                            className="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-colors shadow-sm text-sm"
                             title="Ayuda / Manual"
                         >
                             ?
                         </button>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <button onClick={handleToday} className="px-4 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded font-bold transition-colors text-sm">Hoy</button>
-                        <button onClick={handlePrevDay} className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded font-bold transition-colors">{'<<'}</button>
-                        <span className="text-lg font-bold min-w-[120px] text-center text-gray-800 dark:text-white">
+                    <div className="flex items-center gap-1 sm:gap-2 w-full sm:w-auto justify-between sm:justify-end">
+                        <button
+                            onClick={() => setShowQuienAgendoModal(true)}
+                            className="px-2 sm:px-4 py-1.5 bg-purple-500 hover:bg-purple-600 text-white rounded font-bold transition-all transform hover:-translate-y-0.5 text-xs sm:text-sm shadow-md"
+                            title="Buscar quién agendó"
+                        >
+                            Quien Agendó
+                        </button>
+                        <button
+                            onClick={() => navigate('/recordatorio')}
+                            className="px-2 sm:px-4 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded font-bold transition-all transform hover:-translate-y-0.5 text-xs sm:text-sm shadow-md"
+                            title="Gestionar recordatorios"
+                        >
+                            Recordatorio
+                        </button>
+                        <button
+                            onClick={() => navigate('/contactos')}
+                            className="px-2 sm:px-4 py-1.5 bg-teal-500 hover:bg-teal-600 text-white rounded font-bold transition-all transform hover:-translate-y-0.5 text-xs sm:text-sm shadow-md"
+                            title="Ver Contactos"
+                        >
+                            Contactos
+                        </button>
+                        <button
+                            onClick={handleToday}
+                            className="px-2 sm:px-4 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded font-bold transition-all transform hover:-translate-y-0.5 text-xs sm:text-sm shadow-md"
+                            title="Ir a hoy"
+                        >
+                            Hoy
+                        </button>
+                        <button
+                            onClick={handlePrevDay}
+                            className="px-2 sm:px-3 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded font-bold transition-all transform hover:-translate-y-0.5 text-xs sm:text-sm shadow-md"
+                            title="Día anterior"
+                        >
+                            {'<<'}
+                        </button>
+                        <span className="text-sm sm:text-lg font-bold min-w-[90px] sm:min-w-[120px] text-center text-gray-800 dark:text-white">
                             {formatDateDisplay(currentDate)}
                         </span>
-                        <button onClick={handleNextDay} className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded font-bold transition-colors">{'>>'}</button>
+                        <button
+                            onClick={handleNextDay}
+                            className="px-2 sm:px-3 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded font-bold transition-all transform hover:-translate-y-0.5 text-xs sm:text-sm shadow-md"
+                            title="Día siguiente"
+                        >
+                            {'>>'}
+                        </button>
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto relative bg-white dark:bg-gray-800">
+                <div className="flex-1 overflow-x-auto overflow-y-auto relative bg-white dark:bg-gray-800">
                     <table className="min-w-[800px] w-full border-collapse table-fixed">
                         <thead className="sticky top-0 bg-gray-50 dark:bg-gray-700 z-10 shadow-sm">
                             <tr>
@@ -346,6 +393,11 @@ const AgendaView: React.FC = () => {
                                                             )}
                                                         </div>
                                                         <div className="truncate">{appointment.doctor ? `Dr. ${appointment.doctor.nombre}` : ''}</div>
+                                                        {appointment.asistente && (
+                                                            <div className="truncate text-[10px] opacity-90">
+                                                                {appointment.asistente.nombre} {appointment.asistente.paterno}
+                                                            </div>
+                                                        )}
                                                         {appointment.paciente && appointment.tratamiento && ( // Only show treatment if patient exists and treatment is specified
                                                             <div className="text-[10px] italic mt-0.5 truncate opacity-90">
                                                                 {appointment.tratamiento}
@@ -381,18 +433,10 @@ const AgendaView: React.FC = () => {
 
             {/* History Modal */}
             {showHistoryModal && selectedPatientForHistory && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999]">
                     <div className="bg-white dark:bg-gray-800 w-[90%] max-w-4xl max-h-[90vh] rounded-xl shadow-2xl flex flex-col overflow-hidden">
-                        <div className="p-5 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex justify-between items-center">
+                        <div className="p-5 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
                             <h2 className="text-xl font-bold text-gray-800 dark:text-white m-0">📅 Historial de Citas: {selectedPatientForHistory.nombre} {selectedPatientForHistory.paterno}</h2>
-                            <button
-                                onClick={() => setShowHistoryModal(false)}
-                                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
                         </div>
                         <div className="p-0 overflow-y-auto flex-1 dark:bg-gray-800">
                             {patientHistory.length === 0 ? (
@@ -406,6 +450,7 @@ const AgendaView: React.FC = () => {
                                             <th className="p-3 border-b border-gray-200 dark:border-gray-600 font-semibold text-gray-700 dark:text-white">Doctor</th>
                                             <th className="p-3 border-b border-gray-200 dark:border-gray-600 font-semibold text-gray-700 dark:text-white">Tratamiento</th>
                                             <th className="p-3 border-b border-gray-200 dark:border-gray-600 font-semibold text-gray-700 dark:text-white">Estado</th>
+                                            <th className="p-3 border-b border-gray-200 dark:border-gray-600 font-semibold text-gray-700 dark:text-white">Motivo</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -419,6 +464,13 @@ const AgendaView: React.FC = () => {
                                                     <span className="px-2 py-1 rounded-full text-xs font-bold text-white shadow-sm" style={{ backgroundColor: getStatusColor(cita.estado) }}>
                                                         {cita.estado.toUpperCase()}
                                                     </span>
+                                                </td>
+                                                <td className="p-3 text-gray-700 dark:text-gray-300 text-sm">
+                                                    {cita.estado === 'cancelado' && cita.motivoCancelacion ? (
+                                                        <span className="italic">{cita.motivoCancelacion}</span>
+                                                    ) : (
+                                                        '-'
+                                                    )}
                                                 </td>
                                             </tr>
                                         ))}
@@ -443,6 +495,11 @@ const AgendaView: React.FC = () => {
                 onClose={() => setShowManual(false)}
                 title="Manual de Usuario - Agenda"
                 sections={manualSections}
+            />
+
+            <QuienAgendoModal
+                isOpen={showQuienAgendoModal}
+                onClose={() => setShowQuienAgendoModal(false)}
             />
 
             <style>{`

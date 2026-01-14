@@ -12,6 +12,30 @@ export interface GrupoInventario {
     estado: string;
 }
 
+export interface RecordatorioTratamiento {
+    id: number;
+    historiaClinicaId: number;
+    historiaClinica?: HistoriaClinica;
+    fechaRecordatorio: string;
+    mensaje: string;
+    dias: number;
+    estado: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface RecordatorioPlan {
+    id: number;
+    proformaId: number;
+    proforma?: Proforma;
+    fechaRecordatorio: string;
+    dias: number;
+    mensaje: string;
+    estado: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
 export interface User {
     id: number;
     name: string;
@@ -93,6 +117,8 @@ export interface Personal {
     celular: string;
     fecha_nacimiento: string;
     fecha_ingreso: string;
+    personal_tipo_id?: number;
+    personalTipo?: PersonalTipo;
     estado: string;
     fecha_baja?: string;
 }
@@ -177,9 +203,18 @@ export interface Paciente {
     telefono_responsable: string;
     idCategoria: number;
     categoria?: CategoriaPaciente;
-    tipo_paciente: string;
-    nomenclatura: string;
+    tipo_paciente?: string;
+    motivo?: string;
+    nomenclatura?: string;
     estado: string;
+}
+
+export interface PersonalTipo {
+    id: number;
+    area: string;
+    estado: string;
+    created_at: string;
+    updated_at: string;
 }
 
 export interface UpdateUserDto extends Partial<CreateUserDto> { }
@@ -218,6 +253,7 @@ export interface Proforma {
     nota: string;
     total: number;
     detalles: ProformaDetalle[];
+    estado?: string;
     createdAt: string;
     updatedAt: string;
 }
@@ -237,7 +273,8 @@ export interface HistoriaClinica {
     especialidad?: Especialidad;
     doctorId?: number;
     doctor?: Doctor;
-    asistente?: string;
+    personalId?: number;
+    personal?: Personal;
     estadoTratamiento: string;
     estadoPresupuesto: string;
     proformaId?: number;
@@ -264,6 +301,7 @@ export interface Pago {
     proformaId?: number;
     proforma?: Proforma;
     monto: number;
+    monto_comision?: number;
     tc: number;
     recibo?: string;
     factura?: string;
@@ -296,9 +334,13 @@ export interface Agenda {
     proformaId?: number;
     proforma?: Proforma;
     usuarioId: number;
+    usuario?: User;
     fechaAgendado: string;
     estado: string;
     tratamiento?: string;
+    asistenteId?: number;
+    asistente?: Personal;
+    motivoCancelacion?: string;
 }
 
 export interface GastoFijo {
@@ -380,8 +422,9 @@ export interface Paciente {
     telefono_responsable: string;
     idCategoria: number;
     categoria?: CategoriaPaciente;
-    tipo_paciente: string;
-    nomenclatura: string;
+    tipo_paciente?: string;
+    motivo?: string;
+    nomenclatura?: string;
     estado: string;
     fichaMedica?: FichaMedica;
 }
@@ -477,7 +520,8 @@ export interface HistoriaClinica {
     especialidad?: Especialidad;
     doctorId?: number;
     doctor?: Doctor;
-    asistente?: string;
+    personalId?: number;
+    personal?: Personal;
     hoja: number;
     estadoTratamiento: string;
     estadoPresupuesto: string;
@@ -532,9 +576,13 @@ export interface Agenda {
     proformaId?: number;
     proforma?: Proforma;
     usuarioId: number;
+    usuario?: User;
     fechaAgendado: string;
     estado: string;
     tratamiento?: string;
+    asistenteId?: number;
+    asistente?: Personal;
+    motivoCancelacion?: string;
 }
 
 export interface GastoFijo {
@@ -754,17 +802,87 @@ export interface RecetaDetalle {
     indicacion: string;
 }
 
+export interface MaterialUtilizadoDetalle {
+    id: number;
+    materialUtilizadoId: number;
+    inventarioId: number;
+    inventario?: Inventario;
+    cantidad: string;
+    observaciones?: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
 export interface MaterialUtilizado {
     id: number;
     historiaClinicaId: number;
     historiaClinica?: HistoriaClinica;
-    inventarioId: number;
-    inventario?: Inventario;
     fecha: string;
-    cantidad: string;
     observaciones?: string;
     userId: number;
     user?: User;
+    detalles: MaterialUtilizadoDetalle[];
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface Recordatorio {
+    id: number;
+    tipo: 'personal' | 'consultorio';
+    fecha: string;
+    hora: string;
+    mensaje: string;
+    repetir: 'Mensual' | 'Anual' | 'Solo una vez';
+    estado: 'activo' | 'inactivo';
+    usuarioId?: number;
     createdAt?: string;
     updatedAt?: string;
+}
+
+export interface Contacto {
+    id: number;
+    contacto: string;
+    celular?: string;
+    telefono?: string;
+    email?: string;
+    direccion?: string;
+    estado: 'activo' | 'inactivo';
+    createdAt?: string;
+    updatedAt?: string;
+}
+
+
+export interface Musica {
+    id: number;
+    musica: string;
+    estado: string;
+    created_at?: string;
+    updated_at?: string;
+}
+
+export interface Television {
+    id: number;
+    television: string;
+    estado: string;
+    created_at?: string;
+    updated_at?: string;
+}
+
+export interface PacienteMusica {
+    id: number;
+    pacienteId: number;
+    musicaId: number;
+}
+
+export interface PacienteTelevision {
+    id: number;
+    pacienteId: number;
+    televisionId: number;
+}
+
+export interface BackupInfo {
+    filename: string;
+    size: number;
+    createdAt: string;
+    path: string;
 }

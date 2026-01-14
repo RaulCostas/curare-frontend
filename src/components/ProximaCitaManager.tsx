@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import api from '../services/api';
 import Swal from 'sweetalert2';
-import type { Doctor, Proforma, ProximaCita, Paciente } from '../types';
+import type { Doctor, Proforma, ProximaCita, Paciente, HistoriaClinica } from '../types';
 import { formatDateUTC } from '../utils/formatters';
 import ManualModal, { type ManualSection } from './ManualModal';
 import Pagination from './Pagination';
@@ -11,6 +11,7 @@ interface ProximaCitaManagerProps {
     paciente: Paciente | null;
     selectedProformaId: number;
     proformas: Proforma[];
+    historia: HistoriaClinica[];
     onCitaSaved?: () => void;
 }
 
@@ -23,7 +24,7 @@ const getLocalDateString = () => {
     return `${year}-${month}-${day}`;
 };
 
-const ProximaCitaManager: React.FC<ProximaCitaManagerProps> = ({ pacienteId, paciente, selectedProformaId, proformas, onCitaSaved }) => {
+const ProximaCitaManager: React.FC<ProximaCitaManagerProps> = ({ pacienteId, paciente, selectedProformaId, proformas, historia, onCitaSaved }) => {
     const [citas, setCitas] = useState<ProximaCita[]>([]);
     const [doctors, setDoctors] = useState<Doctor[]>([]);
     const [editingId, setEditingId] = useState<number | null>(null);
@@ -523,11 +524,41 @@ const ProximaCitaManager: React.FC<ProximaCitaManagerProps> = ({ pacienteId, pac
                                     className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-600 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all appearance-none"
                                 >
                                     <option value={0}>-- Seleccione Tratamiento --</option>
-                                    {currentProformaDetails.map(d => (
-                                        <option key={d.id} value={d.id}>
-                                            {d.arancel ? d.arancel.detalle : 'Tratamiento'} {d.piezas ? `(Pz: ${d.piezas})` : ''}
-                                        </option>
-                                    ))}
+                                    {currentProformaDetails.map(d => {
+                                        let isCompleted = false;
+
+                                        if (d.piezas) {
+                                            const allPiezas = d.piezas.split('/').map((p: string) => p.trim());
+                                            const completedPieces: string[] = [];
+                                            historia.forEach(h => {
+                                                if (h.proformaDetalleId === d.id &&
+                                                    h.estadoTratamiento === 'terminado' &&
+                                                    h.pieza) {
+                                                    const pieces = h.pieza.split('/').map((p: string) => p.trim());
+                                                    completedPieces.push(...pieces);
+                                                }
+                                            });
+                                            isCompleted = allPiezas.length > 0 && allPiezas.every((p: string) => completedPieces.includes(p));
+                                        } else {
+                                            isCompleted = historia.some(h =>
+                                                h.proformaDetalleId === d.id &&
+                                                h.estadoTratamiento === 'terminado'
+                                            );
+                                        }
+
+                                        return (
+                                            <option
+                                                key={d.id}
+                                                value={d.id}
+                                                style={isCompleted ? {
+                                                    color: '#16a34a',
+                                                    fontWeight: 'bold'
+                                                } : undefined}
+                                            >
+                                                {d.arancel ? d.arancel.detalle : 'Tratamiento'} {d.piezas ? `(Pz: ${d.piezas})` : ''} {isCompleted ? '(Completado)' : ''}
+                                            </option>
+                                        );
+                                    })}
                                 </select>
                             </div>
                         </div>
@@ -648,7 +679,7 @@ const ProximaCitaManager: React.FC<ProximaCitaManagerProps> = ({ pacienteId, pac
             </div>
 
             <div className="text-sm text-gray-500 dark:text-gray-400 mb-4 font-medium">
-                Mostrando {filteredCitas.length} de {totalCitasForPlan} resultados
+                Mostrando {filteredCitas.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filteredCitas.length)} de {filteredCitas.length} resultados
             </div>
 
             <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">

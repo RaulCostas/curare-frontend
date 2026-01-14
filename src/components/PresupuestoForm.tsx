@@ -244,6 +244,19 @@ const PresupuestoForm: React.FC = () => {
     const handleSubmit = async () => {
         if (!paciente) return;
 
+        // Validate nota field
+        if (!nota || nota.trim() === '') {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Campo Requerido',
+                text: 'Por favor, ingrese una nota o comentario para el presupuesto.',
+                confirmButtonText: 'OK',
+                background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#fff',
+                color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#000',
+            });
+            return;
+        }
+
         try {
             const payload = {
                 pacienteId: paciente.id,
@@ -372,7 +385,7 @@ const PresupuestoForm: React.FC = () => {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
                     </span>
-                    {proformaId ? (isReadOnly ? 'Ver Presupuesto' : 'Editar Presupuesto') : 'Nuevo Presupuesto'}
+                    {proformaId ? (isReadOnly ? `Ver Presupuesto #${numero}` : `Editar Presupuesto #${numero}`) : 'Nuevo Presupuesto'}
                 </h2>
                 <button
                     onClick={() => setShowManual(true)}
@@ -613,6 +626,7 @@ const PresupuestoForm: React.FC = () => {
                         </thead>
                         <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                             {detalles.map((item, index) => {
+                                // Get completed pieces for this treatment
                                 const matchingHistory = historiaClinica.filter(h => {
                                     if (h.estadoTratamiento !== 'terminado') return false;
                                     if (h.proformaDetalleId) {
@@ -624,8 +638,69 @@ const PresupuestoForm: React.FC = () => {
                                     return false;
                                 });
 
+                                // Check if this specific treatment has estadoPresupuesto = 'terminado'
+                                const presupuestoTerminado = historiaClinica.some(h => {
+                                    if (h.estadoPresupuesto !== 'terminado') return false;
+                                    // Match by proformaDetalleId (most specific)
+                                    if (h.proformaDetalleId && item.id) {
+                                        return h.proformaDetalleId === item.id;
+                                    }
+                                    // Match by tratamiento name
+                                    if (proformaId && h.proformaId === Number(proformaId)) {
+                                        return h.tratamiento === item.tratamiento;
+                                    }
+                                    return false;
+                                });
+
+                                // Extract completed pieces from historia clinica
+                                const completedPieces: string[] = [];
+                                matchingHistory.forEach(h => {
+                                    if (h.pieza) {
+                                        const pieces = h.pieza.split('/').map((p: string) => p.trim());
+                                        completedPieces.push(...pieces);
+                                    }
+                                });
+
+                                // Parse pieces from presupuesto
+                                const allPiezas = item.piezas ? item.piezas.split('/').map(p => p.trim()) : [];
+                                const allPiecesCompleted = allPiezas.length > 0 && allPiezas.every(p => completedPieces.includes(p));
+
+                                // For treatments without specific pieces, use quantity-based completion
                                 const totalCompleted = matchingHistory.reduce((sum, h) => sum + (h.cantidad || 0), 0);
-                                const isCompleted = totalCompleted >= item.cantidad;
+                                const isTreatmentCompleted = allPiezas.length > 0 ? allPiecesCompleted : totalCompleted >= item.cantidad;
+
+                                // Treatment is completed if:
+                                // 1. This specific treatment has estadoPresupuesto='terminado' in HC, OR
+                                // 2. The treatment itself is completed (all pieces or quantity)
+                                const isCompleted = presupuestoTerminado || isTreatmentCompleted;
+
+                                // Render pieces with completion status
+                                const renderPiezasWithCompletion = () => {
+                                    if (!item.piezas) return <span className="text-gray-400">-</span>;
+
+                                    if (allPiezas.length === 0) return <span className="text-gray-400">-</span>;
+
+                                    return (
+                                        <span className="inline-flex flex-wrap gap-1">
+                                            {allPiezas.map((pieza, idx) => {
+                                                const isPiezaCompleted = completedPieces.includes(pieza);
+                                                return (
+                                                    <React.Fragment key={idx}>
+                                                        <span
+                                                            className={`${isPiezaCompleted
+                                                                ? 'text-green-600 dark:text-green-400 line-through decoration-2 font-bold'
+                                                                : 'text-gray-900 dark:text-gray-200'
+                                                                }`}
+                                                        >
+                                                            {pieza}
+                                                        </span>
+                                                        {idx < allPiezas.length - 1 && <span className="text-gray-400">/</span>}
+                                                    </React.Fragment>
+                                                );
+                                            })}
+                                        </span>
+                                    );
+                                };
 
                                 return (
                                     <tr key={index} className={`transition-colors duration-150 ${editingIndex === index ? 'bg-blue-50 dark:bg-blue-900/40 border-l-4 border-blue-500' : (item.posible ? 'bg-amber-50 dark:bg-amber-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50')}`}>
@@ -634,7 +709,7 @@ const PresupuestoForm: React.FC = () => {
                                             {item.tratamiento}
                                             {isCompleted && <span className="ml-2 text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 px-2 py-0.5 rounded-full no-underline">COMPLETADO</span>}
                                         </td>
-                                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">{item.piezas}</td>
+                                        <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-200">{renderPiezasWithCompletion()}</td>
                                         <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200 text-right">{item.precioUnitario.toFixed(2)}</td>
                                         <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200 text-center">{item.cantidad}</td>
                                         <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200 text-right">{item.subTotal.toFixed(2)}</td>
@@ -689,6 +764,7 @@ const PresupuestoForm: React.FC = () => {
                         value={nota}
                         onChange={(e) => setNota(e.target.value)}
                         disabled={isReadOnly}
+                        required
                         placeholder="Ingrese notas adicionales de este presupuesto..."
                         className="w-full h-32 p-4 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-900 disabled:cursor-not-allowed resize-none transition-colors shadow-inner"
                     />

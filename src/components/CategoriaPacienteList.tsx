@@ -14,7 +14,7 @@ const CategoriaPacienteList: React.FC = () => {
     const [totalRecords, setTotalRecords] = useState(0);
 
     const [showManual, setShowManual] = useState(false);
-    const limit = 5;
+    const limit = 10;
     const navigate = useNavigate();
 
     const manualSections: ManualSection[] = [
@@ -410,7 +410,7 @@ const CategoriaPacienteList: React.FC = () => {
             </div>
 
             <div className="mb-3 text-sm text-gray-600 dark:text-gray-400 no-print">
-                Mostrando {categorias.length} de {totalRecords} resultados
+                Mostrando {totalRecords === 0 ? 0 : (currentPage - 1) * limit + 1} - {Math.min(currentPage * limit, totalRecords)} de {totalRecords} resultados
             </div>
 
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-x-auto transition-colors">

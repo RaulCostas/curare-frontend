@@ -56,7 +56,7 @@ const VacacionesList: React.FC = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [total, setTotal] = useState(0);
-    const limit = 5;
+    const limit = 10;
     const [showPrintModal, setShowPrintModal] = useState(false);
     const [modalMode, setModalMode] = useState<'print' | 'export'>('print');
     const [printVacaciones, setPrintVacaciones] = useState<Vacacion[]>([]);
@@ -673,7 +673,7 @@ const VacacionesList: React.FC = () => {
 
             {/* Records Count */}
             <div className="mb-2 text-gray-600 dark:text-gray-400 text-sm">
-                Mostrando {vacaciones.length} de {total} registros
+                Mostrando {total === 0 ? 0 : (currentPage - 1) * limit + 1} - {Math.min(currentPage * limit, total)} de {total} registros
             </div>
 
             <div className="overflow-x-auto">

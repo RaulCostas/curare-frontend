@@ -571,7 +571,7 @@ const PagosLaboratoriosList: React.FC = () => {
 
             {/* Results Count */}
             <div className="mb-4 text-sm text-gray-600 dark:text-gray-400 no-print">
-                Mostrando {currentItems.length} de {filteredPagos.length} registros
+                Mostrando {filteredPagos.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filteredPagos.length)} de {filteredPagos.length} registros
             </div>
 
             {/* Table */}

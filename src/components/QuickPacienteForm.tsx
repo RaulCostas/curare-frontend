@@ -107,9 +107,9 @@ const QuickPacienteForm: React.FC<QuickPacienteFormProps> = ({ isOpen, onClose, 
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/60 flex justify-center items-center z-[1100]">
-            <div className="bg-white dark:bg-gray-800 p-5 rounded-lg w-[400px] max-w-[90%] shadow-lg text-gray-800 dark:text-white">
-                <h3 className="mt-0 text-xl font-bold mb-4 text-gray-900 dark:text-white">Nuevo Paciente Rápido</h3>
+        <div className="fixed inset-0 bg-black/60 flex justify-center items-center z-[9999] p-2 sm:p-4">
+            <div className="bg-white dark:bg-gray-800 p-4 sm:p-5 rounded-lg w-full max-w-[400px] max-h-[95vh] overflow-y-auto shadow-lg text-gray-800 dark:text-white">
+                <h3 className="mt-0 text-lg sm:text-xl font-bold mb-3 sm:mb-4 text-gray-900 dark:text-white">Nuevo Paciente Rápido</h3>
                 <form onSubmit={handleSubmit}>
                     <div className="grid gap-3">
                         <div>
@@ -123,7 +123,7 @@ const QuickPacienteForm: React.FC<QuickPacienteFormProps> = ({ isOpen, onClose, 
                                 className="w-full p-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
                                 <label className="block mb-1 font-bold text-sm text-gray-700 dark:text-gray-300">Paterno:</label>
                                 <input
@@ -157,7 +157,7 @@ const QuickPacienteForm: React.FC<QuickPacienteFormProps> = ({ isOpen, onClose, 
                                 className="w-full p-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
                                 <label className="block mb-1 font-bold text-sm text-gray-700 dark:text-gray-300">Fecha Nacimiento:</label>
                                 <input
@@ -183,19 +183,19 @@ const QuickPacienteForm: React.FC<QuickPacienteFormProps> = ({ isOpen, onClose, 
                             </div>
                         </div>
                     </div>
-                    <div className="mt-5 flex justify-end gap-3">
+                    <div className="mt-4 sm:mt-5 flex flex-wrap justify-end gap-2 sm:gap-3">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded transition-colors flex items-center gap-2">
+                            className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-3 sm:px-4 rounded transition-colors flex items-center gap-2 text-sm sm:text-base">
 
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg> Cancelar
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg> Cancelar
                         </button>
                         <button
                             type="submit"
-                            className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2 transition-colors transform hover:-translate-y-0.5 shadow-sm"
+                            className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-3 sm:px-4 rounded flex items-center gap-2 transition-colors transform hover:-translate-y-0.5 shadow-sm text-sm sm:text-base"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" className="sm:w-[18px] sm:h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
                                 <polyline points="17 21 17 13 7 13 7 21"></polyline>
                                 <polyline points="7 3 7 8 15 8"></polyline>

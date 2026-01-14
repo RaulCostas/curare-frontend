@@ -545,7 +545,7 @@ const PacientesDeudores: React.FC = () => {
 
             {/* Showing status */}
             <div className="mb-3 text-sm text-gray-500 dark:text-gray-400 no-print">
-                Mostrando {paginatedDeudores.length} de {totalItems} registros
+                Mostrando {totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, totalItems)} de {totalItems} registros
             </div>
 
             {/* Table */}

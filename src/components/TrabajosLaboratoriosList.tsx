@@ -218,7 +218,7 @@ const TrabajosLaboratoriosList: React.FC = () => {
 
             {/* Record Count Indicator */}
             <div className="mb-4 text-gray-600 dark:text-gray-400 font-medium">
-                Mostrando {currentItems.length} de {filteredTrabajos.length} registros
+                Mostrando {filteredTrabajos.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filteredTrabajos.length)} de {filteredTrabajos.length} registros
             </div>
 
             {/* Table */}

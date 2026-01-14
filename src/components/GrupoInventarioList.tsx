@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 
 import api from '../services/api';
@@ -21,12 +22,9 @@ const GrupoInventarioList: React.FC = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [total, setTotal] = useState(0);
-    const limit = 5;
+    const limit = 10;
+    const navigate = useNavigate();
 
-    // Form states
-    const [showForm, setShowForm] = useState(false);
-    const [formData, setFormData] = useState({ id: 0, grupo: '', estado: 'Activo' });
-    const [isEditing, setIsEditing] = useState(false);
     const [showManual, setShowManual] = useState(false);
 
     const manualSections: ManualSection[] = [
@@ -123,47 +121,7 @@ const GrupoInventarioList: React.FC = () => {
         setCurrentPage(page);
     };
 
-    const handleEdit = (grupo: GrupoInventario) => {
-        setFormData(grupo);
-        setIsEditing(true);
-        setShowForm(true);
-    };
 
-    const handleCreate = () => {
-        setFormData({ id: 0, grupo: '', estado: 'Activo' });
-        setIsEditing(false);
-        setShowForm(true);
-    };
-
-    const handleFormSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        try {
-            if (isEditing) {
-                await api.patch(`/grupo-inventario/${formData.id}`, formData);
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Actualizado',
-                    text: 'El grupo ha sido actualizado correctamente',
-                    timer: 1500,
-                    showConfirmButton: false
-                });
-            } else {
-                await api.post('/grupo-inventario', formData);
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Creado',
-                    text: 'El grupo ha sido creado correctamente',
-                    timer: 1500,
-                    showConfirmButton: false
-                });
-            }
-            setShowForm(false);
-            fetchGrupos();
-        } catch (error) {
-            console.error('Error saving grupo:', error);
-            Swal.fire('Error', 'Error al guardar el grupo', 'error');
-        }
-    };
 
 
 
@@ -409,7 +367,7 @@ const GrupoInventarioList: React.FC = () => {
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v3a2 2 0 002 2h1v2a2 2 0 002 2h6a2 2 0 002-2v-2h1a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z" clipRule="evenodd" /></svg> Imprimir
                     </button>
                     <button
-                        onClick={handleCreate}
+                        onClick={() => navigate('/grupo-inventario/create')}
                         className="bg-[#3498db] hover:bg-blue-600 text-white hover:text-white font-semibold py-2 px-6 rounded-lg flex items-center gap-2 shadow-md transition-all transform hover:-translate-y-0.5"
                     >
                         <span className="text-xl">+</span> Nuevo Grupo
@@ -446,7 +404,7 @@ const GrupoInventarioList: React.FC = () => {
             </div>
 
             <div className="mb-2 text-sm text-gray-600 dark:text-gray-400">
-                Mostrando {grupos.length} de {total} resultados
+                Mostrando {total === 0 ? 0 : (currentPage - 1) * limit + 1} - {Math.min(currentPage * limit, total)} de {total} resultados
             </div>
 
             <div className="overflow-x-auto shadow-sm rounded-lg">
@@ -471,7 +429,7 @@ const GrupoInventarioList: React.FC = () => {
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm flex gap-2">
                                     <button
-                                        onClick={() => handleEdit(grupo)}
+                                        onClick={() => navigate(`/grupo-inventario/edit/${grupo.id}`)}
                                         className="p-2.5 bg-amber-400 hover:bg-amber-500 text-white rounded-lg inline-flex items-center justify-center shadow-md transition-all transform hover:-translate-y-0.5"
                                         title="Editar"
                                     >
@@ -518,78 +476,6 @@ const GrupoInventarioList: React.FC = () => {
                 onPageChange={handlePageChange}
             />
 
-            {/* Modal Form */}
-            {showForm && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-96 transform transition-all">
-                        <h3 className="text-xl font-bold mb-4 text-gray-800 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
-                            {isEditing ? 'Editar Grupo' : 'Nuevo Grupo'}
-                        </h3>
-                        <form onSubmit={handleFormSubmit}>
-                            <div className="mb-4">
-                                <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Grupo</label>
-                                <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                                            <path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z" />
-                                            <path fillRule="evenodd" d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" clipRule="evenodd" />
-                                        </svg>
-                                    </div>
-                                    <input
-                                        type="text"
-                                        value={formData.grupo}
-                                        onChange={(e) => setFormData({ ...formData, grupo: e.target.value })}
-                                        className="shadow appearance-none border rounded w-full py-2 pl-10 pr-3 text-gray-700 dark:text-white leading-tight focus:outline-none focus:shadow-outline dark:bg-gray-700 dark:border-gray-600"
-                                        required
-                                    />
-                                </div>
-                            </div>
-                            <div className="mb-4">
-                                <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Estado</label>
-                                <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                        </svg>
-                                    </div>
-                                    <select
-                                        value={formData.estado}
-                                        onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
-                                        className="shadow appearance-none border rounded w-full py-2 pl-10 pr-3 text-gray-700 dark:text-white leading-tight focus:outline-none focus:shadow-outline bg-white dark:bg-gray-700 dark:border-gray-600"
-                                    >
-                                        <option value="Activo">Activo</option>
-                                        <option value="Inactivo">Inactivo</option>
-                                    </select>
-                                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="flex justify-end gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowForm(false)}
-                                    className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-all transform hover:-translate-y-0.5 flex items-center gap-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg> Cancelar
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all transform hover:-translate-y-0.5 flex items-center gap-2"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                                        <polyline points="7 3 7 8 15 8"></polyline>
-                                    </svg>
-                                    Guardar
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {/* Manual Modal */}
             <ManualModal
                 isOpen={showManual}
                 onClose={() => setShowManual(false)}

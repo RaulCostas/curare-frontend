@@ -12,7 +12,7 @@ const RecetarioList: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [showManual, setShowManual] = useState(false);
-    const limit = 5;
+    const limit = 10;
     const navigate = useNavigate();
 
     const manualSections: ManualSection[] = [
@@ -462,7 +462,7 @@ const RecetarioList: React.FC = () => {
             </div>
 
             <div className="mb-4 text-gray-600 dark:text-gray-400 text-sm">
-                Mostrando {filteredRecetas.length} de {recetas.length} registros
+                Mostrando {filteredRecetas.length === 0 ? 0 : (currentPage - 1) * limit + 1} - {Math.min(currentPage * limit, filteredRecetas.length)} de {filteredRecetas.length} registros
             </div>
 
             {/* Table */}

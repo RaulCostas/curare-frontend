@@ -519,7 +519,7 @@ const SecuenciaTratamientoManager: React.FC<Props> = ({ pacienteId, paciente, se
             </div>
 
             <div className="text-sm text-gray-500 dark:text-gray-400 mb-4 font-medium">
-                Mostrando {filteredSecuencias.length} de {secuencias.length} resultados
+                Mostrando {filteredSecuencias.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filteredSecuencias.length)} de {filteredSecuencias.length} resultados
             </div>
 
             <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">

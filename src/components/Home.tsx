@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
-import type { Personal, GastoFijo, Inventario } from '../types';
+import type { Personal, GastoFijo, Inventario, Recordatorio, RecordatorioTratamiento, RecordatorioPlan } from '../types';
 
-import { getLocalDateString } from '../utils/dateUtils';
+import { getLocalDateString, formatDate } from '../utils/dateUtils';
 
 const Home: React.FC = () => {
     const navigate = useNavigate();
@@ -13,6 +13,9 @@ const Home: React.FC = () => {
     const [dueGastos, setDueGastos] = useState<GastoFijo[]>([]);
     const [labAlerts, setLabAlerts] = useState<any[]>([]);
     const [lowStockItems, setLowStockItems] = useState<Inventario[]>([]);
+    const [recordatorios, setRecordatorios] = useState<Recordatorio[]>([]);
+    const [tratamientosPendientes, setTratamientosPendientes] = useState<RecordatorioTratamiento[]>([]);
+    const [planesPendientes, setPlanesPendientes] = useState<RecordatorioPlan[]>([]);
 
     // Permission Logic
     const userString = localStorage.getItem('user');
@@ -33,7 +36,55 @@ const Home: React.FC = () => {
         fetchLabAlerts();
         fetchLowStockItems();
         fetchNoRegistrados();
+        fetchRecordatorios();
+        fetchTratamientosPendientes();
+        fetchPlanesPendientes();
     }, []);
+
+    const fetchPlanesPendientes = async () => {
+        try {
+            const response = await api.get<RecordatorioPlan[]>('/recordatorio-plan/pendientes');
+            setPlanesPendientes(response.data);
+        } catch (error) {
+            console.error('Error fetching planes pendientes:', error);
+        }
+    };
+
+    const fetchTratamientosPendientes = async () => {
+        try {
+            const response = await api.get<RecordatorioTratamiento[]>('/recordatorio-tratamiento/pendientes');
+            setTratamientosPendientes(response.data);
+        } catch (error) {
+            console.error('Error fetching tratamientos pendientes:', error);
+        }
+    };
+
+    const handleCompletarTratamiento = async (id: number) => {
+        try {
+            await api.patch(`/recordatorio-tratamiento/${id}`, { estado: 'completado' });
+            fetchTratamientosPendientes(); // Refresh list
+        } catch (error) {
+            console.error('Error al completar tratamiento:', error);
+        }
+    };
+
+    const handleCompletarPlan = async (id: number) => {
+        try {
+            await api.patch(`/recordatorio-plan/${id}`, { estado: 'inactivo' });
+            fetchPlanesPendientes();
+        } catch (error) {
+            console.error('Error al completar plan:', error);
+        }
+    };
+
+    const handleCompletarRecordatorioGeneral = async (id: number) => {
+        try {
+            await api.patch(`/recordatorio/${id}`, { estado: 'inactivo' }); // Assuming 'inactivo' means processed/done for general reminders
+            fetchRecordatorios();
+        } catch (error) {
+            console.error('Error al completar recordatorio:', error);
+        }
+    };
 
     const fetchTodayAppointments = async () => {
         try {
@@ -129,6 +180,16 @@ const Home: React.FC = () => {
         }
     };
 
+    const fetchRecordatorios = async () => {
+        try {
+            const usuarioId = user?.id;
+            const response = await api.get<Recordatorio[]>(`/recordatorio/activos${usuarioId ? `?usuarioId=${usuarioId}` : ''}`);
+            setRecordatorios(response.data);
+        } catch (error) {
+            console.error('Error fetching recordatorios:', error);
+        }
+    };
+
     return (
         <div className="content-card bg-white dark:bg-gray-800 p-8 rounded-xl shadow-sm transition-colors duration-200">
             <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-2 text-center">Bienvenido a CURARE</h1>
@@ -174,7 +235,7 @@ const Home: React.FC = () => {
                         </table>
                         <div className="flex justify-between items-center mt-4 px-2">
                             <span className="text-sm text-gray-500 dark:text-gray-400">
-                                Mostrando {noRegistrados.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).length} de {noRegistrados.length} registros
+                                Mostrando {noRegistrados.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, noRegistrados.length)} de {noRegistrados.length} registros
                             </span>
                             <div className="flex gap-2">
                                 <button
@@ -199,6 +260,171 @@ const Home: React.FC = () => {
                                 </button>
                             </div>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Recordatorios Section */}
+            {recordatorios.length > 0 && (
+                <div className="mb-8 bg-purple-50 dark:bg-purple-900/20 border-l-4 border-purple-500 p-6 rounded-r-lg shadow-sm">
+                    <h2 className="text-xl font-bold text-purple-700 dark:text-purple-300 mb-4 flex items-center gap-2">
+                        <span>🔔</span> Recordatorios Activos
+                    </h2>
+                    <div className="space-y-3">
+                        {recordatorios.map(recordatorio => (
+                            <div
+                                key={recordatorio.id}
+                                className="flex justify-between items-start bg-white dark:bg-gray-700 p-4 rounded-lg shadow-sm border border-gray-100 dark:border-gray-600"
+                            >
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${recordatorio.tipo === 'personal'
+                                            ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
+                                            : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                                            }`}>
+                                            {recordatorio.tipo === 'personal' ? '👤 Personal' : '🏥 Consultorio'}
+                                        </span>
+                                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                                            {formatDate(recordatorio.fecha)} - {recordatorio.hora.substring(0, 5)}
+                                        </span>
+                                    </div>
+                                    <p className="text-gray-800 dark:text-white font-medium mb-1">
+                                        {recordatorio.mensaje}
+                                    </p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                                        Repetir: {recordatorio.repetir}
+                                    </p>
+                                </div>
+                                <div className="flex flex-col items-center gap-2">
+                                    <div className="text-2xl text-purple-500 dark:text-purple-400">
+                                        🔔
+                                    </div>
+                                    <button
+                                        onClick={() => handleCompletarRecordatorioGeneral(recordatorio.id)}
+                                        title="Marcar como visto / inactivar"
+                                        className="p-2 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Tratamientos Pendientes Section */}
+            {tratamientosPendientes.length > 0 && (
+                <div className="mb-8 bg-indigo-50 dark:bg-indigo-900/20 border-l-4 border-indigo-500 p-6 rounded-r-lg shadow-sm">
+                    <h2 className="text-xl font-bold text-indigo-700 dark:text-indigo-300 mb-4 flex items-center gap-2">
+                        <span>📋</span> Seguimiento de Tratamientos
+                    </h2>
+                    <div className="space-y-3">
+                        {tratamientosPendientes.map(recordatorio => (
+                            <div
+                                key={recordatorio.id}
+                                className="flex justify-between items-start bg-white dark:bg-gray-700 p-4 rounded-lg shadow-sm border border-gray-100 dark:border-gray-600"
+                            >
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">
+                                            Tratamiento
+                                        </span>
+                                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                                            {formatDate(recordatorio.fechaRecordatorio)}
+                                        </span>
+                                    </div>
+                                    <div className="text-gray-800 dark:text-white mb-1">
+                                        <span className="font-bold block text-lg">{recordatorio.historiaClinica?.paciente?.nombre} {recordatorio.historiaClinica?.paciente?.paterno} {recordatorio.historiaClinica?.paciente?.materno}</span>
+                                        <div className="text-sm mt-1">
+                                            <span className="font-semibold text-indigo-700 dark:text-indigo-300">Tratamiento:</span> {recordatorio.historiaClinica?.tratamiento}
+                                        </div>
+                                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                            Fecha Cita: {formatDate(recordatorio.historiaClinica?.fecha)} • Recordatorio a los {recordatorio.dias} días
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => navigate(`/pacientes/${recordatorio.historiaClinica?.pacienteId}/historia-clinica`)}
+                                        className="mt-3 px-3 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-xs font-medium transition-colors shadow-sm"
+                                    >
+                                        Ver Historia Clínica
+                                    </button>
+                                </div>
+                                <div className="flex flex-col items-center gap-2">
+                                    <div className="text-2xl text-indigo-500 dark:text-indigo-400">
+                                        📋
+                                    </div>
+                                    <button
+                                        onClick={() => handleCompletarTratamiento(recordatorio.id)}
+                                        title="Marcar como visto / completado"
+                                        className="p-2 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Planes Pendientes Section */}
+            {planesPendientes.length > 0 && (
+                <div className="mb-8 bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 p-6 rounded-r-lg shadow-sm">
+                    <h2 className="text-xl font-bold text-blue-700 dark:text-blue-300 mb-4 flex items-center gap-2">
+                        <span>🗓️</span> Seguimiento de Planes
+                    </h2>
+                    <div className="space-y-3">
+                        {planesPendientes.map(plan => (
+                            <div
+                                key={plan.id}
+                                className="flex justify-between items-start bg-white dark:bg-gray-700 p-4 rounded-lg shadow-sm border border-gray-100 dark:border-gray-600"
+                            >
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                            Plan #{plan.proforma?.numero || plan.proforma?.id}
+                                        </span>
+                                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                                            {formatDate(plan.fechaRecordatorio)}
+                                        </span>
+                                    </div>
+                                    <div className="text-gray-800 dark:text-white mb-1">
+                                        <span className="font-bold block text-lg">{plan.proforma?.paciente?.nombre} {plan.proforma?.paciente?.paterno} {plan.proforma?.paciente?.materno}</span>
+                                        <div className="text-sm mt-1">
+                                            {plan.mensaje}
+                                        </div>
+                                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                            Fecha Plan: {formatDate(plan.proforma?.fecha)} • Recordatorio a los {plan.dias} días
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => navigate(`/pacientes/${plan.proforma?.pacienteId}/historia-clinica`)}
+                                        className="mt-3 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs font-medium transition-colors shadow-sm"
+                                    >
+                                        Ver Historia Clínica
+                                    </button>
+                                </div>
+                                <div className="flex flex-col items-center gap-2">
+                                    <div className="text-2xl text-blue-500 dark:text-blue-400">
+                                        🗓️
+                                    </div>
+                                    <button
+                                        onClick={() => handleCompletarPlan(plan.id)}
+                                        title="Marcar como visto / completado"
+                                        className="p-2 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
             )}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
-import type { Agenda, Paciente, Doctor, Proforma } from '../types';
+import type { Agenda, Paciente, Doctor, Proforma, Personal } from '../types';
 
 interface AgendaFormProps {
     isOpen: boolean;
@@ -22,6 +22,9 @@ const AgendaForm: React.FC<AgendaFormProps> = ({
     const [pacientes, setPacientes] = useState<Paciente[]>([]);
     const [doctors, setDoctors] = useState<Doctor[]>([]);
     const [proformas, setProformas] = useState<Proforma[]>([]);
+    const [personal, setPersonal] = useState<Personal[]>([]);
+    const [historiaClinica, setHistoriaClinica] = useState<any[]>([]);
+    const [tratamientos, setTratamientos] = useState<any[]>([]);
     const [isQuickPatientOpen, setIsQuickPatientOpen] = useState(false);
     const [isNonPatientEvent, setIsNonPatientEvent] = useState(false);
 
@@ -35,8 +38,9 @@ const AgendaForm: React.FC<AgendaFormProps> = ({
         proformaId: 0,
         estado: 'agendado',
         usuarioId: 0,
-        tratamiento: ''
-
+        tratamiento: '',
+        asistenteId: 0,
+        motivoCancelacion: ''
     });
 
     const [maxDuration, setMaxDuration] = useState(120); // Default max
@@ -118,7 +122,9 @@ const AgendaForm: React.FC<AgendaFormProps> = ({
                 proformaId: initialData.proformaId || 0,
                 estado: initialData.estado,
                 usuarioId: initialData.usuarioId,
-                tratamiento: initialData.tratamiento || ''
+                tratamiento: initialData.tratamiento || '',
+                asistenteId: initialData.asistenteId || 0,
+                motivoCancelacion: initialData.motivoCancelacion || ''
             });
 
             // Determine if non-patient event based on initial data
@@ -134,13 +140,20 @@ const AgendaForm: React.FC<AgendaFormProps> = ({
 
     const fetchCatalogs = async () => {
         try {
-            const [doctorsRes, pacientesRes] = await Promise.all([
+            const [doctorsRes, pacientesRes, personalRes] = await Promise.all([
                 api.get('/doctors?limit=1000'),
-                api.get('/pacientes?limit=1000')
+                api.get('/pacientes?limit=1000'),
+                api.get('/personal?limit=1000')
             ]);
             const activeDoctors = (doctorsRes.data.data || []).filter((doctor: any) => doctor.estado === 'activo');
             setDoctors(activeDoctors);
             setPacientes(pacientesRes.data.data || []);
+
+            // Filter personal by Clínica area and active status
+            const clinicaPersonal = (personalRes.data.data || []).filter((p: Personal) =>
+                p.personalTipo?.area === 'Clínica' && p.estado === 'activo'
+            );
+            setPersonal(clinicaPersonal);
         } catch (error) {
             console.error('Error fetching catalogs:', error);
         }
@@ -153,6 +166,31 @@ const AgendaForm: React.FC<AgendaFormProps> = ({
         } catch (error) {
             console.error('Error fetching proformas:', error);
             setProformas([]);
+        }
+    };
+
+    const fetchHistoriaClinica = async (pacienteId: number) => {
+        try {
+            const response = await api.get(`/historia-clinica/paciente/${pacienteId}`);
+            setHistoriaClinica(response.data);
+        } catch (error) {
+            console.error('Error fetching historia clinica:', error);
+        }
+    };
+
+    const fetchTratamientosByProforma = async (proformaId: number) => {
+        try {
+            const response = await api.get(`/proformas/${proformaId}`);
+            const proforma = response.data;
+
+            if (proforma.detalles && proforma.detalles.length > 0) {
+                setTratamientos(proforma.detalles);
+            } else {
+                setTratamientos([]);
+            }
+        } catch (error) {
+            console.error('Error fetching tratamientos:', error);
+            setTratamientos([]);
         }
     };
 
@@ -183,26 +221,26 @@ const AgendaForm: React.FC<AgendaFormProps> = ({
             }));
             if (newPacienteId > 0) {
                 fetchProformasByPaciente(newPacienteId);
+                fetchHistoriaClinica(newPacienteId);
             } else {
                 setProformas([]);
+                setHistoriaClinica([]);
+                setTratamientos([]);
             }
         } else if (name === 'proformaId') {
             const selectedProformaId = Number(value);
-            const selectedProforma = proformas.find(p => p.id === selectedProformaId);
-
-            let tratamientoText = formData.tratamiento;
-            if (selectedProforma && selectedProforma.detalles) {
-                tratamientoText = selectedProforma.detalles
-                    .map(d => d.arancel?.detalle || '')
-                    .filter(Boolean)
-                    .join(', ');
-            }
 
             setFormData(prev => ({
                 ...prev,
                 proformaId: selectedProformaId,
-                tratamiento: tratamientoText
+                tratamiento: ''
             }));
+
+            if (selectedProformaId > 0) {
+                fetchTratamientosByProforma(selectedProformaId);
+            } else {
+                setTratamientos([]);
+            }
         } else {
             setFormData(prev => ({
                 ...prev,
@@ -254,7 +292,8 @@ const AgendaForm: React.FC<AgendaFormProps> = ({
             const payload = {
                 ...formData,
                 pacienteId: formData.pacienteId > 0 ? formData.pacienteId : undefined,
-                proformaId: formData.proformaId > 0 ? formData.proformaId : undefined
+                proformaId: formData.proformaId > 0 ? formData.proformaId : undefined,
+                asistenteId: formData.asistenteId > 0 ? formData.asistenteId : undefined
             };
 
             // Validate user
@@ -344,7 +383,7 @@ const AgendaForm: React.FC<AgendaFormProps> = ({
 
     return (
         <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-[1000]">
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg w-[500px] max-w-[90%] shadow-xl text-gray-800 dark:text-gray-100">
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg w-[500px] max-w-[90%] max-h-[90vh] overflow-y-auto shadow-xl text-gray-800 dark:text-gray-100">
                 <h2 className="mt-0 text-xl font-bold mb-4 flex items-center gap-3">
                     <span className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg text-purple-600 dark:text-purple-300">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -499,7 +538,7 @@ const AgendaForm: React.FC<AgendaFormProps> = ({
 
                                 {/* Proforma (Dependiente de Paciente) */}
                                 <div className="col-span-1 md:col-span-2">
-                                    <label className="block mb-1 font-bold text-sm">Proforma (Opcional):</label>
+                                    <label className="block mb-1 font-bold text-sm">Plan Tratamiento (Opcional):</label>
                                     <div className="relative">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
                                             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -516,9 +555,24 @@ const AgendaForm: React.FC<AgendaFormProps> = ({
                                             disabled={formData.pacienteId === 0}
                                         >
                                             <option value={0}>-- Ninguna --</option>
-                                            {proformas.map(p => (
-                                                <option key={p.id} value={p.id}>No. {p.numero} - {p.fecha}</option>
-                                            ))}
+                                            {proformas.map(p => {
+                                                const isCompleted = historiaClinica.some(h =>
+                                                    h.proformaId === p.id && h.estadoPresupuesto === 'terminado'
+                                                );
+
+                                                return (
+                                                    <option
+                                                        key={p.id}
+                                                        value={p.id}
+                                                        style={isCompleted ? {
+                                                            color: '#16a34a',
+                                                            fontWeight: 'bold'
+                                                        } : undefined}
+                                                    >
+                                                        No. {p.numero} - {p.fecha} {isCompleted ? '(Completado)' : ''}
+                                                    </option>
+                                                );
+                                            })}
                                         </select>
                                     </div>
                                 </div>
@@ -541,6 +595,79 @@ const AgendaForm: React.FC<AgendaFormProps> = ({
                                         className="w-full pl-9 p-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         required={isNonPatientEvent}
                                     />
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Tratamiento - Only show for patient events */}
+                        {!isNonPatientEvent && (
+                            <div className="col-span-1 md:col-span-2">
+                                <label className="block mb-1 font-bold text-sm">Tratamiento:</label>
+                                <div className="relative">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`absolute left-2.5 text-gray-400 pointer-events-none ${formData.proformaId === 0 ? 'top-4' : 'top-1/2 -translate-y-1/2'}`}>
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                        <polyline points="14 2 14 8 20 8"></polyline>
+                                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                                        <polyline points="10 9 9 9 8 9"></polyline>
+                                    </svg>
+
+                                    {formData.proformaId === 0 ? (
+                                        <textarea
+                                            name="tratamiento"
+                                            value={formData.tratamiento}
+                                            onChange={handleChange}
+                                            className="w-full pl-9 p-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 h-[60px] resize-y"
+                                            placeholder="Detalle del tratamiento..."
+                                        />
+                                    ) : (
+                                        <select
+                                            name="tratamiento"
+                                            value={formData.tratamiento}
+                                            onChange={handleChange}
+                                            className="w-full pl-9 p-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+                                        >
+                                            <option value="">-- Seleccione Tratamiento --</option>
+                                            {tratamientos.map((detalle, index) => {
+                                                let isCompleted = false;
+
+                                                if (detalle.piezas) {
+                                                    const allPiezas = detalle.piezas.split('/').map((p: string) => p.trim());
+                                                    const completedPieces: string[] = [];
+                                                    historiaClinica.forEach(h => {
+                                                        if (h.proformaDetalleId === detalle.id &&
+                                                            h.estadoTratamiento === 'terminado' &&
+                                                            h.pieza) {
+                                                            const pieces = h.pieza.split('/').map((p: string) => p.trim());
+                                                            completedPieces.push(...pieces);
+                                                        }
+                                                    });
+                                                    isCompleted = allPiezas.length > 0 && allPiezas.every((p: string) => completedPieces.includes(p));
+                                                } else {
+                                                    isCompleted = historiaClinica.some(h =>
+                                                        h.proformaDetalleId === detalle.id &&
+                                                        h.estadoTratamiento === 'terminado'
+                                                    );
+                                                }
+
+                                                const tratamientoText = detalle.arancel?.detalle || `Tratamiento ${index + 1}`;
+                                                const piezasText = detalle.piezas ? ` - Piezas: ${detalle.piezas}` : '';
+
+                                                return (
+                                                    <option
+                                                        key={index}
+                                                        value={tratamientoText}
+                                                        style={isCompleted ? {
+                                                            color: '#16a34a',
+                                                            fontWeight: 'bold'
+                                                        } : undefined}
+                                                    >
+                                                        {tratamientoText}{piezasText} {isCompleted ? '(Completado)' : ''}
+                                                    </option>
+                                                );
+                                            })}
+                                        </select>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -568,24 +695,27 @@ const AgendaForm: React.FC<AgendaFormProps> = ({
                             </div>
                         </div>
 
-                        {/* Tratamiento */}
+                        {/* Asistente */}
                         <div className="col-span-1 md:col-span-2">
-                            <label className="block mb-1 font-bold text-sm">Tratamiento:</label>
+                            <label className="block mb-1 font-bold text-sm">Asistente (Opcional):</label>
                             <div className="relative">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-2.5 top-4 text-gray-400 pointer-events-none">
-                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                                    <polyline points="14 2 14 8 20 8"></polyline>
-                                    <line x1="16" y1="13" x2="8" y2="13"></line>
-                                    <line x1="16" y1="17" x2="8" y2="17"></line>
-                                    <polyline points="10 9 9 9 8 9"></polyline>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="9" cy="7" r="4"></circle>
+                                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                                 </svg>
-                                <textarea
-                                    name="tratamiento"
-                                    value={formData.tratamiento}
+                                <select
+                                    name="asistenteId"
+                                    value={formData.asistenteId}
                                     onChange={handleChange}
-                                    className="w-full pl-9 p-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 h-[60px] resize-y"
-                                    placeholder="Detalle del tratamiento..."
-                                />
+                                    className="w-full pl-9 p-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+                                >
+                                    <option value={0}>-- Ninguno --</option>
+                                    {personal.map(p => (
+                                        <option key={p.id} value={p.id}>{p.paterno} {p.materno} {p.nombre}</option>
+                                    ))}
+                                </select>
                             </div>
                         </div>
 
@@ -610,6 +740,27 @@ const AgendaForm: React.FC<AgendaFormProps> = ({
                                 </select>
                             </div>
                         </div>
+
+                        {/* Motivo de Cancelación - Only show when estado is cancelado */}
+                        {formData.estado === 'cancelado' && (
+                            <div className="col-span-1 md:col-span-2">
+                                <label className="block mb-1 font-bold text-sm">Motivo de Cancelación:</label>
+                                <div className="relative">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-2.5 top-3 text-gray-400 pointer-events-none">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                    </svg>
+                                    <textarea
+                                        name="motivoCancelacion"
+                                        value={formData.motivoCancelacion}
+                                        onChange={handleChange}
+                                        rows={3}
+                                        placeholder="Ingrese el motivo de la cancelación..."
+                                        className="w-full pl-9 p-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    />
+                                </div>
+                            </div>
+                        )}
 
                     </div>
 

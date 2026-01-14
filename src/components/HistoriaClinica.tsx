@@ -10,6 +10,9 @@ import HistoriaClinicaList from './HistoriaClinicaList';
 import ProximaCitaManager from './ProximaCitaManager';
 import SecuenciaTratamientoManager from './SecuenciaTratamientoManager';
 import MaterialUtilizadoModal from './MaterialUtilizadoModal';
+import PlanTratamientoModal from './PlanTratamientoModal';
+import RecordatorioTratamientoModal from './RecordatorioTratamientoModal';
+import RecordatorioPlanModal from './RecordatorioPlanModal';
 import { formatDateUTC } from '../utils/formatters';
 
 const HistoriaClinica: React.FC = () => {
@@ -19,11 +22,17 @@ const HistoriaClinica: React.FC = () => {
     const [historia, setHistoria] = useState<HistoriaClinicaType[]>([]);
     const [proformas, setProformas] = useState<Proforma[]>([]);
     const [pagos, setPagos] = useState<Pago[]>([]);
+    const [musicaPreferences, setMusicaPreferences] = useState<string[]>([]);
+    const [televisionPreferences, setTelevisionPreferences] = useState<string[]>([]);
     const [selectedProformaId, setSelectedProformaId] = useState<number>(0);
 
     const [activeTab, setActiveTab] = useState<'historia' | 'cita' | 'secuencia'>('historia');
     const [historiaToEdit, setHistoriaToEdit] = useState<HistoriaClinicaType | null>(null);
     const [showForm, setShowForm] = useState(false);
+    const [showPlanModal, setShowPlanModal] = useState(false);
+    const [showRecordatorioPlanModal, setShowRecordatorioPlanModal] = useState(false);
+    const [showReminderModal, setShowReminderModal] = useState(false);
+    const [selectedReminderHistoria, setSelectedReminderHistoria] = useState<HistoriaClinicaType | null>(null);
 
     // Material Utilizado workflow state
     const [showMaterialModal, setShowMaterialModal] = useState(false);
@@ -54,6 +63,7 @@ const HistoriaClinica: React.FC = () => {
             fetchHistoria();
             fetchProformas();
             fetchPagos();
+            fetchMusicaTelevision();
         }
     }, [id]);
 
@@ -90,6 +100,37 @@ const HistoriaClinica: React.FC = () => {
             setProformas(response.data);
         } catch (error) {
             console.error('Error fetching proformas:', error);
+        }
+    };
+
+    const fetchMusicaTelevision = async () => {
+        if (!id) return;
+        try {
+            const [musicasRes, televisionesRes, allMusicasRes, allTelevisionesRes] = await Promise.all([
+                api.get(`/pacientes/${id}/musica`),
+                api.get(`/pacientes/${id}/television`),
+                api.get('/musica?limit=100'),
+                api.get('/television?limit=100')
+            ]);
+
+            const selectedMusicaIds = musicasRes.data || [];
+            const selectedTelevisionIds = televisionesRes.data || [];
+
+            const allMusicas = allMusicasRes.data.data || allMusicasRes.data;
+            const allTelevisiones = allTelevisionesRes.data.data || allTelevisionesRes.data;
+
+            // Mapear IDs a nombres
+            const musicaNames = allMusicas
+                .filter((m: any) => selectedMusicaIds.includes(m.id))
+                .map((m: any) => m.musica);
+            const televisionNames = allTelevisiones
+                .filter((t: any) => selectedTelevisionIds.includes(t.id))
+                .map((t: any) => t.television);
+
+            setMusicaPreferences(musicaNames);
+            setTelevisionPreferences(televisionNames);
+        } catch (error) {
+            console.error('Error fetching música/televisión:', error);
         }
     };
 
@@ -202,7 +243,7 @@ const HistoriaClinica: React.FC = () => {
     };
 
 
-    const filteredHistoria = selectedProformaId ? historia.filter(h => h.proformaId === selectedProformaId) : [];
+    const filteredHistoria = selectedProformaId ? historia.filter(h => h.proformaId === selectedProformaId) : historia;
 
 
     const loadImage = (src: string): Promise<HTMLImageElement> => {
@@ -279,7 +320,7 @@ const HistoriaClinica: React.FC = () => {
                 item.observaciones || '-',
                 item.cantidad,
                 item.doctor ? `${item.doctor.paterno} ${item.doctor.nombre}` : '-',
-                item.asistente || '-',
+                item.personal ? `${item.personal.paterno} ${item.personal.nombre}` : '-',
                 item.estadoTratamiento
             ]);
 
@@ -340,43 +381,7 @@ const HistoriaClinica: React.FC = () => {
         document.body.appendChild(iframe);
     };
 
-    const handleSendWhatsApp = async () => {
-        if (!selectedProformaId || selectedProformaId === 0) {
-            await Swal.fire({
-                icon: 'warning',
-                title: 'Plan de Tratamiento Requerido',
-                text: 'Por favor, seleccione un plan de tratamiento antes de enviar por WhatsApp.',
-                confirmButtonText: 'OK',
-                background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#fff',
-                color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#000',
-            });
-            return;
-        }
 
-        try {
-            const response = await api.post(`/historia-clinica/send-whatsapp/${id}/${selectedProformaId}`);
-
-            await Swal.fire({
-                icon: 'success',
-                title: '¡Enviado!',
-                text: response.data.message || 'Historia clínica enviada por WhatsApp exitosamente',
-                showConfirmButton: false,
-                timer: 2000,
-                background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#fff',
-                color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#000',
-            });
-        } catch (error: any) {
-            console.error('Error sending WhatsApp:', error);
-            await Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: error.response?.data?.message || 'Error al enviar la historia clínica por WhatsApp',
-                confirmButtonText: 'OK',
-                background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#fff',
-                color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#000',
-            });
-        }
-    };
 
     return (
         <div className="p-6 bg-white dark:bg-gray-800 min-h-screen text-gray-800 dark:text-gray-200 transition-colors duration-300">
@@ -402,14 +407,31 @@ const HistoriaClinica: React.FC = () => {
             </div>
 
             {paciente && (
-                <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl border border-gray-200 dark:border-gray-600 mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl border border-gray-200 dark:border-gray-600 mb-6">
                     <div>
                         <h3 className="text-xl font-bold text-gray-800 dark:text-white">
                             {paciente.paterno} {paciente.materno} {paciente.nombre}
                         </h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                            Celular: {formatPhoneNumber(paciente.celular)} | Edad: {paciente.fecha_nacimiento ? `${new Date().getFullYear() - new Date(paciente.fecha_nacimiento).getFullYear()} años` : 'N/A'}
-                        </p>
+                        <div className="text-sm text-gray-500 dark:text-gray-400 mt-2 space-y-1">
+                            <p>
+                                <span className="font-semibold">Celular:</span> {formatPhoneNumber(paciente.celular)} |
+                                <span className="font-semibold">Edad:</span> {paciente.fecha_nacimiento ? `${new Date().getFullYear() - new Date(paciente.fecha_nacimiento).getFullYear()} años` : 'N/A'}
+                            </p>
+                            {(musicaPreferences.length > 0 || televisionPreferences.length > 0) && (
+                                <p className="flex flex-wrap gap-x-4 gap-y-1">
+                                    {musicaPreferences.length > 0 && (
+                                        <span>
+                                            <span className="font-semibold text-blue-600 dark:text-blue-400">🎵 Música:</span> {musicaPreferences.join(', ')}
+                                        </span>
+                                    )}
+                                    {televisionPreferences.length > 0 && (
+                                        <span>
+                                            <span className="font-semibold text-purple-600 dark:text-purple-400">📺 TV:</span> {televisionPreferences.join(', ')}
+                                        </span>
+                                    )}
+                                </p>
+                            )}
+                        </div>
                     </div>
                 </div>
             )}
@@ -423,9 +445,26 @@ const HistoriaClinica: React.FC = () => {
                     className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
                 >
                     <option value={0}>-- Todos / Sin Plan --</option>
-                    {proformas.map(p => (
-                        <option key={p.id} value={p.id}>Plan #{p.numero || p.id} - {formatDateUTC(p.fecha)}</option>
-                    ))}
+                    {proformas.map(p => {
+                        // Check if this proforma is marked as terminado in Historia Clinica
+                        const isCompleted = historia.some(h =>
+                            h.proformaId === p.id && h.estadoPresupuesto === 'terminado'
+                        );
+
+                        return (
+                            <option
+                                key={p.id}
+                                value={p.id}
+                                style={isCompleted ? {
+                                    textDecoration: 'line-through',
+                                    color: '#16a34a',
+                                    fontWeight: 'bold'
+                                } : undefined}
+                            >
+                                Plan #{p.numero || p.id} - {formatDateUTC(p.fecha)}
+                            </option>
+                        );
+                    })}
                 </select>
                 <span className="text-xs text-blue-600 dark:text-blue-400 ml-auto">
                     * Filtrar por plan actualiza todas las pestañas
@@ -488,91 +527,90 @@ const HistoriaClinica: React.FC = () => {
             <div className="animate-fade-in-up">
                 {activeTab === 'historia' && (
                     <>
-                        {/* Informational Message when no plan is selected */}
-                        {selectedProformaId === 0 && (
-                            <div className="p-10 text-center text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
-                                <p>⬅️ Por favor, seleccione un <strong>Plan de Tratamiento</strong>.</p>
-                            </div>
-                        )}
 
-                        {/* Only show content when a plan is selected */}
-                        {selectedProformaId > 0 && (
-                            <>
-                                {(showForm || historiaToEdit) && (
-                                    <div className="mb-6">
-                                        <HistoriaClinicaForm
-                                            pacienteId={Number(id)}
-                                            onSuccess={() => {
-                                                fetchHistoria();
-                                                setShowForm(false);
-                                            }}
-                                            historiaToEdit={historiaToEdit}
-                                            onCancelEdit={handleCancelEdit}
-                                            selectedProformaId={selectedProformaId}
-                                            proformas={proformas}
-                                            onMaterialUtilizadoRequired={(historiaId) => {
-                                                setCurrentHistoriaId(historiaId);
-                                                setShowMaterialModal(true);
-                                            }}
-                                        />
-                                    </div>
-                                )}
 
-                                <HistoriaClinicaList
-                                    historia={filteredHistoria}
-                                    onDelete={handleDelete}
-                                    onEdit={handleEdit}
-                                    onNewHistoria={!showForm && !historiaToEdit ? () => setShowForm(true) : undefined}
-                                    onPrint={handlePrintHistory}
-                                    onSendWhatsApp={handleSendWhatsApp}
-                                />
 
-                                <div className="mt-6 flex justify-end">
-                                    {(() => {
-                                        const filteredHistoria = historia.filter(h => h.proformaId === selectedProformaId && h.estadoTratamiento === 'terminado');
-                                        const totalEjecutado = filteredHistoria.reduce((acc, curr) => acc + Number(curr.precio || 0), 0);
-
-                                        const filteredPagos = pagos.filter(p => p.proformaId === selectedProformaId);
-                                        const totalPagado = filteredPagos.reduce((acc, curr) => acc + Number(curr.monto), 0);
-
-                                        const saldo = totalPagado - totalEjecutado;
-                                        const saldoFavor = saldo > 0 ? saldo : 0;
-                                        const saldoContra = saldo < 0 ? Math.abs(saldo) : 0;
-
-                                        return (
-                                            <div className="bg-gray-50 dark:bg-gray-700/50 p-6 rounded-xl border border-gray-200 dark:border-gray-600 flex gap-8">
-                                                <div className="text-right">
-                                                    <div className="text-sm text-gray-500 dark:text-gray-400">Total Ejecutado</div>
-                                                    <div className="text-xl font-bold text-gray-800 dark:text-white">Bs. {totalEjecutado.toFixed(2)}</div>
-                                                </div>
-                                                <div className="text-right">
-                                                    <div className="text-sm text-gray-500 dark:text-gray-400">Total Pagado</div>
-                                                    <div className="text-xl font-bold text-gray-800 dark:text-white">Bs. {totalPagado.toFixed(2)}</div>
-                                                </div>
-                                                {saldoFavor > 0 && (
-                                                    <div className="text-right text-green-600 dark:text-green-400">
-                                                        <div className="text-sm">Saldo a Favor</div>
-                                                        <div className="text-xl font-bold">Bs. {saldoFavor.toFixed(2)}</div>
-                                                    </div>
-                                                )}
-                                                {saldoContra > 0 && (
-                                                    <div className="text-right text-red-600 dark:text-red-400">
-                                                        <div className="text-sm">Saldo en Contra</div>
-                                                        <div className="text-xl font-bold">Bs. {saldoContra.toFixed(2)}</div>
-                                                    </div>
-                                                )}
-                                                {saldo === 0 && (
-                                                    <div className="text-right text-gray-500">
-                                                        <div className="text-sm">Saldo</div>
-                                                        <div className="text-xl font-bold">Bs. 0.00</div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        );
-                                    })()}
+                        <>
+                            {(showForm || historiaToEdit) && (
+                                <div className="mb-6">
+                                    <HistoriaClinicaForm
+                                        pacienteId={Number(id)}
+                                        onSuccess={() => {
+                                            fetchHistoria();
+                                            setShowForm(false);
+                                        }}
+                                        historiaToEdit={historiaToEdit}
+                                        onCancelEdit={handleCancelEdit}
+                                        selectedProformaId={selectedProformaId}
+                                        proformas={proformas}
+                                        onMaterialUtilizadoRequired={(historiaId) => {
+                                            setCurrentHistoriaId(historiaId);
+                                            setShowMaterialModal(true);
+                                        }}
+                                    />
                                 </div>
-                            </>
-                        )}
+                            )}
+
+                            <HistoriaClinicaList
+                                historia={filteredHistoria}
+                                onDelete={handleDelete}
+                                onEdit={handleEdit}
+                                onNewHistoria={!showForm && !historiaToEdit ? () => setShowForm(true) : undefined}
+                                onPrint={handlePrintHistory}
+                                onViewPlan={() => setShowPlanModal(true)}
+                                onPlanTiempo={() => setShowRecordatorioPlanModal(true)}
+                                onReminder={(item) => {
+                                    setSelectedReminderHistoria(item);
+                                    setShowReminderModal(true);
+                                }}
+                            />
+
+                            <div className="mt-6 flex justify-end">
+                                {(() => {
+                                    const filteredHistoria = historia.filter(h => h.proformaId === selectedProformaId && h.estadoTratamiento === 'terminado');
+                                    const totalEjecutado = filteredHistoria.reduce((acc, curr) => acc + Number(curr.precio || 0), 0);
+
+                                    const filteredPagos = pagos.filter(p => p.proformaId === selectedProformaId);
+                                    const totalPagado = filteredPagos.reduce((acc, curr) => acc + Number(curr.monto), 0);
+
+                                    const saldo = totalPagado - totalEjecutado;
+                                    const saldoFavor = saldo > 0 ? saldo : 0;
+                                    const saldoContra = saldo < 0 ? Math.abs(saldo) : 0;
+
+                                    return (
+                                        <div className="bg-gray-50 dark:bg-gray-700/50 p-6 rounded-xl border border-gray-200 dark:border-gray-600 flex gap-8">
+                                            <div className="text-right">
+                                                <div className="text-sm text-gray-500 dark:text-gray-400">Total Ejecutado</div>
+                                                <div className="text-xl font-bold text-gray-800 dark:text-white">Bs. {totalEjecutado.toFixed(2)}</div>
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="text-sm text-gray-500 dark:text-gray-400">Total Pagado</div>
+                                                <div className="text-xl font-bold text-gray-800 dark:text-white">Bs. {totalPagado.toFixed(2)}</div>
+                                            </div>
+                                            {saldoFavor > 0 && (
+                                                <div className="text-right text-green-600 dark:text-green-400">
+                                                    <div className="text-sm">Saldo a Favor</div>
+                                                    <div className="text-xl font-bold">Bs. {saldoFavor.toFixed(2)}</div>
+                                                </div>
+                                            )}
+                                            {saldoContra > 0 && (
+                                                <div className="text-right text-red-600 dark:text-red-400">
+                                                    <div className="text-sm">Saldo en Contra</div>
+                                                    <div className="text-xl font-bold">Bs. {saldoContra.toFixed(2)}</div>
+                                                </div>
+                                            )}
+                                            {saldo === 0 && (
+                                                <div className="text-right text-gray-500">
+                                                    <div className="text-sm">Saldo</div>
+                                                    <div className="text-xl font-bold">Bs. 0.00</div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })()}
+                            </div>
+                        </>
+
                     </>
                 )}
 
@@ -582,6 +620,7 @@ const HistoriaClinica: React.FC = () => {
                         paciente={paciente}
                         selectedProformaId={selectedProformaId}
                         proformas={proformas}
+                        historia={historia}
                         onCitaSaved={handleProximaCitaSaved}
                     />
                 )}
@@ -601,6 +640,30 @@ const HistoriaClinica: React.FC = () => {
                 onClose={() => setShowMaterialModal(false)}
                 historiaClinicaId={currentHistoriaId || 0}
                 onSuccess={handleMaterialUtilizadoSuccess}
+            />
+
+            {/* Plan Tratamiento Modal */}
+            <PlanTratamientoModal
+                isOpen={showPlanModal}
+                onClose={() => setShowPlanModal(false)}
+                proforma={proformas.find(p => p.id === selectedProformaId) || null}
+                historia={historia}
+            />
+
+            {/* Recordatorio Modal */}
+            <RecordatorioTratamientoModal
+                isOpen={showReminderModal}
+                onClose={() => setShowReminderModal(false)}
+                historia={selectedReminderHistoria}
+                paciente={paciente}
+            />
+
+            {/* Recordatorio Plan Modal */}
+            <RecordatorioPlanModal
+                isOpen={showRecordatorioPlanModal}
+                onClose={() => setShowRecordatorioPlanModal(false)}
+                proformaId={selectedProformaId}
+                proforma={proformas.find(p => p.id === selectedProformaId) || null}
             />
         </div>
     );

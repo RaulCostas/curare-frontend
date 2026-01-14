@@ -23,7 +23,7 @@ const ArancelList: React.FC = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [total, setTotal] = useState(0);
-    const limit = 5;
+    const limit = 10;
 
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
 
@@ -700,7 +700,7 @@ const ArancelList: React.FC = () => {
             )}
 
             <div className="mb-2 text-gray-600 dark:text-gray-400 text-sm">
-                Mostrando {aranceles.length} de {total} resultados
+                Mostrando {total === 0 ? 0 : (currentPage - 1) * limit + 1} - {Math.min(currentPage * limit, total)} de {total} resultados
             </div>
 
             <div className="overflow-x-auto">

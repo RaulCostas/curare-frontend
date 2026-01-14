@@ -14,7 +14,7 @@ const PagosDoctoresList = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [total, setTotal] = useState(0);
-    const limit = 5;
+    const limit = 10;
 
     // Cancelled patients modal state
     const [showCancelledModal, setShowCancelledModal] = useState(false);
@@ -567,7 +567,7 @@ const PagosDoctoresList = () => {
             </div>
 
             <div className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                Mostrando {pagos.length} de {total} registros
+                Mostrando {total === 0 ? 0 : (currentPage - 1) * limit + 1} - {Math.min(currentPage * limit, total)} de {total} registros
             </div>
 
             <div className="overflow-x-auto rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 transition-colors">

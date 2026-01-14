@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import api from '../services/api';
 import Swal from 'sweetalert2';
 import ManualModal, { type ManualSection } from './ManualModal';
+import MusicaTelevisionTab from './MusicaTelevisionTab';
 
 const PacienteForm: React.FC = () => {
     const navigate = useNavigate();
@@ -10,11 +11,13 @@ const PacienteForm: React.FC = () => {
     const isEditing = !!id;
     const [activeTab, setActiveTab] = useState('datos');
     const [showManual, setShowManual] = useState(false);
+    const [selectedMusicas, setSelectedMusicas] = useState<number[]>([]);
+    const [selectedTelevisiones, setSelectedTelevisiones] = useState<number[]>([]);
 
     const manualSections: ManualSection[] = [
         {
             title: 'Registro de Pacientes',
-            content: 'Complete los datos personales, de contacto y médicos del paciente. Use las pestañas para organizar la información.'
+            content: 'Complete los datos personales, de contacto y médicos del paciente. Use las pestañas para organizar la información. El formulario cuenta con 3 pestañas: Datos Personales, Ficha Médica y Música/Televisión.'
         },
         {
             title: 'Ficha Médica',
@@ -23,6 +26,14 @@ const PacienteForm: React.FC = () => {
         {
             title: 'Categoría y Tipo',
             content: 'Asigne una categoría al paciente (ej: VIP, Regular) y defina si es Particular o de Seguro para aplicar tarifas correctas.'
+        },
+        {
+            title: 'Música / Televisión',
+            content: 'Configure las preferencias de música y televisión del paciente para personalizar su experiencia durante los tratamientos. Las selecciones se guardan automáticamente al marcar/desmarcar las opciones.'
+        },
+        {
+            title: 'Guardado de Datos',
+            content: 'Use el botón "Guardar" al final del formulario para guardar los datos personales y la ficha médica. Las preferencias de música/TV se guardan automáticamente al seleccionarlas. Puede cancelar en cualquier momento con el botón "Cancelar".'
         }
     ];
 
@@ -51,6 +62,7 @@ const PacienteForm: React.FC = () => {
         telefono_responsable: '',
         idCategoria: 0,
         tipo_paciente: '',
+        motivo: '',
         nomenclatura: '',
         estado: 'activo',
         // Ficha Medica
@@ -224,7 +236,17 @@ const PacienteForm: React.FC = () => {
                     showConfirmButton: false
                 });
             } else {
-                await api.post('/pacientes', payload);
+                const response = await api.post('/pacientes', payload);
+                const newPacienteId = response.data.id;
+
+                // Guardar preferencias de música y TV si existen
+                if (selectedMusicas.length > 0) {
+                    await api.post(`/pacientes/${newPacienteId}/musica`, { musicaIds: selectedMusicas });
+                }
+                if (selectedTelevisiones.length > 0) {
+                    await api.post(`/pacientes/${newPacienteId}/television`, { televisionIds: selectedTelevisiones });
+                }
+
                 await Swal.fire({
                     icon: 'success',
                     title: 'Paciente Creado',
@@ -298,6 +320,21 @@ const PacienteForm: React.FC = () => {
                         <polyline points="10 9 9 9 8 9"></polyline>
                     </svg>
                     Ficha Médica
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setActiveTab('musica-tv')}
+                    className={`px-5 py-2.5 cursor-pointer border-b-4 flex items-center gap-2 transition-all duration-200 text-base ${activeTab === 'musica-tv'
+                        ? 'border-blue-500 text-blue-500 font-bold bg-gray-50 dark:bg-gray-700 rounded-t'
+                        : 'border-transparent text-gray-600 dark:text-gray-400 font-normal bg-gray-200 dark:bg-gray-800 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-t'
+                        }`}
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M9 18V5l12-2v13"></path>
+                        <circle cx="6" cy="18" r="3"></circle>
+                        <circle cx="18" cy="16" r="3"></circle>
+                    </svg>
+                    Música / Televisión
                 </button>
             </div>
 
@@ -596,6 +633,19 @@ const PacienteForm: React.FC = () => {
                                             <option value="Especial">Especial</option>
                                         </select>
                                     </div>
+                                    {formData.tipo_paciente === 'Especial' && (
+                                        <div className="mt-2">
+                                            <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Motivo:</label>
+                                            <textarea
+                                                name="motivo"
+                                                value={formData.motivo || ''}
+                                                onChange={handleChange}
+                                                className="w-full p-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                rows={2}
+                                                placeholder="Especifique el motivo"
+                                            />
+                                        </div>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block mb-1 font-medium text-gray-700 dark:text-gray-300">Nomenclatura:</label>
@@ -608,6 +658,7 @@ const PacienteForm: React.FC = () => {
                                             <polyline points="10 9 9 9 8 9"></polyline>
                                         </svg>
                                         <select name="nomenclatura" value={formData.nomenclatura} onChange={handleChange} className="w-full pl-10 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none">
+                                            <option value="">Ninguna</option>
                                             <option value="Paciente Remitido">Paciente Remitido</option>
                                             <option value="Mal Paciente">Mal Paciente</option>
                                         </select>
@@ -785,6 +836,16 @@ const PacienteForm: React.FC = () => {
 
                         </fieldset>
                     </>
+                )}
+
+                {activeTab === 'musica-tv' && (
+                    <MusicaTelevisionTab
+                        pacienteId={id ? Number(id) : null}
+                        selectedMusicas={selectedMusicas}
+                        setSelectedMusicas={setSelectedMusicas}
+                        selectedTelevisiones={selectedTelevisiones}
+                        setSelectedTelevisiones={setSelectedTelevisiones}
+                    />
                 )}
 
                 <div className="flex gap-3 mt-6">

@@ -155,7 +155,7 @@ const PagosForm: React.FC = () => {
 
     const fetchFormasPago = async () => {
         try {
-            const response = await api.get('/forma-pago');
+            const response = await api.get('/forma-pago?limit=100');
             // Check structure of response (paginated or array)
             const data = response.data.data ? response.data.data : response.data;
             setFormasPago(data || []);
@@ -550,6 +550,10 @@ const PagosForm: React.FC = () => {
                 comisionTarjetaId:
                     formData.formaPagoId && formasPago.find(fp => fp.id === formData.formaPagoId)?.forma_pago?.toLowerCase() === 'tarjeta' && Number(formData.comisionTarjetaId) > 0
                         ? Number(formData.comisionTarjetaId)
+                        : undefined,
+                monto_comision:
+                    formData.formaPagoId && formasPago.find(fp => fp.id === formData.formaPagoId)?.forma_pago?.toLowerCase() === 'tarjeta' && Number(formData.comisionTarjetaId) > 0
+                        ? (finalMonto * (comisiones.find(c => c.id === Number(formData.comisionTarjetaId))?.monto || 0)) / 100
                         : undefined
             };
 
@@ -716,7 +720,7 @@ const PagosForm: React.FC = () => {
 
             <div className="no-print flex flex-row gap-6 items-start">
                 <form onSubmit={handleSubmit} className="flex-1 w-full">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 text-sm">
 
                         {/* Paciente */}
                         <div className="md:col-span-2">
@@ -731,7 +735,7 @@ const PagosForm: React.FC = () => {
                                     value={formData.pacienteId}
                                     onChange={handleChange}
                                     required
-                                    className="w-full pl-10 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+                                    className="w-full pl-10 pr-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none text-sm"
                                 >
                                     <option value={0}>-- Seleccione Paciente --</option>
                                     {pacientes.map(p => (
@@ -740,7 +744,7 @@ const PagosForm: React.FC = () => {
                                 </select>
                             </div>
                         </div>
-                        <div>
+                        <div className="md:col-span-2">
                             <label className="block mb-2 font-medium text-gray-700 dark:text-gray-300">Proforma (Opcional):</label>
                             <div className="relative">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 pointer-events-none">
@@ -754,7 +758,7 @@ const PagosForm: React.FC = () => {
                                     value={formData.proformaId}
                                     onChange={handleChange}
                                     disabled={!formData.pacienteId}
-                                    className="w-full pl-10 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none disabled:bg-gray-200 dark:disabled:bg-gray-800 disabled:cursor-not-allowed"
+                                    className="w-full pl-10 pr-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none disabled:bg-gray-200 dark:disabled:bg-gray-800 disabled:cursor-not-allowed text-sm"
                                 >
                                     <option value={0}>-- Seleccione Proforma --</option>
                                     {filteredProformas.map(p => (
@@ -780,7 +784,7 @@ const PagosForm: React.FC = () => {
                                     value={formData.fecha}
                                     onChange={handleChange}
                                     required
-                                    className="w-full pl-10 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-full pl-10 pr-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                                 />
                             </div>
                         </div>
@@ -800,7 +804,7 @@ const PagosForm: React.FC = () => {
                                     onChange={handleChange}
                                     required
                                     step="0.01"
-                                    className="w-full pl-10 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-full pl-10 pr-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                                 />
                             </div>
                         </div>
@@ -820,7 +824,7 @@ const PagosForm: React.FC = () => {
                                     value={formData.moneda}
                                     onChange={handleChange}
                                     required
-                                    className="w-full pl-10 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+                                    className="w-full pl-10 pr-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none text-sm"
                                 >
                                     <option value="Bolivianos">Bolivianos</option>
                                     <option value="Dólares">Dólares</option>
@@ -831,7 +835,7 @@ const PagosForm: React.FC = () => {
                         {/* TC - Only show if Moneda is Dólares */}
                         {formData.moneda === 'Dólares' && (
                             <div>
-                                <label className="block mb-2 font-medium text-gray-700 dark:text-gray-300">Tipo de Cambio (TC):</label>
+                                <label className="block mb-1 font-medium text-gray-700 dark:text-gray-300 text-sm">Tipo de Cambio (TC):</label>
                                 <div className="relative">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 pointer-events-none">
                                         <polyline points="23 4 23 10 17 10"></polyline>
@@ -845,7 +849,7 @@ const PagosForm: React.FC = () => {
                                         onChange={handleChange}
                                         required
                                         step="0.01"
-                                        className="w-full pl-10 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full pl-10 pr-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                                     />
                                 </div>
                             </div>
@@ -853,7 +857,7 @@ const PagosForm: React.FC = () => {
 
                         {/* Recibo */}
                         <div>
-                            <label className="block mb-2 font-medium text-gray-700 dark:text-gray-300">No. Recibo:</label>
+                            <label className="block mb-1 font-medium text-gray-700 dark:text-gray-300 text-sm">No. Recibo:</label>
                             <div className="relative">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 pointer-events-none">
                                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -865,14 +869,14 @@ const PagosForm: React.FC = () => {
                                     name="recibo"
                                     value={formData.recibo}
                                     onChange={handleChange}
-                                    className="w-full pl-10 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-full pl-10 pr-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                                 />
                             </div>
                         </div>
 
                         {/* Factura */}
                         <div>
-                            <label className="block mb-2 font-medium text-gray-700 dark:text-gray-300">No. Factura:</label>
+                            <label className="block mb-1 font-medium text-gray-700 dark:text-gray-300 text-sm">No. Factura:</label>
                             <div className="relative">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 pointer-events-none">
                                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -884,14 +888,14 @@ const PagosForm: React.FC = () => {
                                     name="factura"
                                     value={formData.factura}
                                     onChange={handleChange}
-                                    className="w-full pl-10 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-full pl-10 pr-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                                 />
                             </div>
                         </div>
 
                         {/* Forma de Pago */}
                         <div>
-                            <label className="block mb-2 font-medium text-gray-700 dark:text-gray-300">Forma de Pago:</label>
+                            <label className="block mb-1 font-medium text-gray-700 dark:text-gray-300 text-sm">Forma de Pago:</label>
                             <div className="relative">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 pointer-events-none">
                                     <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
@@ -908,7 +912,7 @@ const PagosForm: React.FC = () => {
                                         }));
                                     }}
                                     required
-                                    className="w-full pl-10 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+                                    className="w-full pl-10 pr-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none text-sm"
                                 >
                                     <option value="">-- Seleccione Forma de Pago --</option>
                                     {formasPago.map((fp: any) => (
@@ -925,7 +929,7 @@ const PagosForm: React.FC = () => {
 
                             return isTarjeta && (
                                 <div>
-                                    <label className="block mb-2 font-medium text-gray-700 dark:text-gray-300">Tipo de Tarjeta (Comisión): <span className="text-red-500">*</span></label>
+                                    <label className="block mb-1 font-medium text-gray-700 dark:text-gray-300 text-sm">Tipo de Tarjeta (Comisión): <span className="text-red-500">*</span></label>
                                     <div className="relative">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 pointer-events-none">
                                             <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
@@ -936,7 +940,7 @@ const PagosForm: React.FC = () => {
                                             value={formData.comisionTarjetaId || ''}
                                             onChange={handleChange}
                                             required={true}
-                                            className="w-full pl-10 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+                                            className="w-full pl-10 pr-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none text-sm"
                                         >
                                             <option value="">-- Seleccione Tarjeta --</option>
                                             {comisiones.filter(c => c.estado === 'activo').map(comision => (
@@ -951,8 +955,8 @@ const PagosForm: React.FC = () => {
                         })()}
 
                         {/* Observaciones */}
-                        <div className="md:col-span-2">
-                            <label className="block mb-2 font-medium text-gray-700 dark:text-gray-300">Observaciones:</label>
+                        <div className="md:col-span-3 lg:col-span-4">
+                            <label className="block mb-1 font-medium text-gray-700 dark:text-gray-300 text-sm">Observaciones:</label>
                             <div className="relative">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-3 top-6 text-gray-500 dark:text-gray-400 pointer-events-none">
                                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -963,7 +967,7 @@ const PagosForm: React.FC = () => {
                                     value={formData.observaciones}
                                     onChange={handleChange}
                                     rows={3}
-                                    className="w-full pl-10 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-full pl-10 pr-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                                 />
                             </div>
                         </div>
@@ -1281,7 +1285,6 @@ const PagosForm: React.FC = () => {
 
                             <div className="mt-6 flex justify-end gap-3">
                                 <button
-                                    onClick={() => setShowTransferModal(false)}
                                     onClick={() => setShowTransferModal(false)}
                                     className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-all transform hover:-translate-y-0.5 flex items-center gap-2">
 

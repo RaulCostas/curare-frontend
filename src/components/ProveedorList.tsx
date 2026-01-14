@@ -24,7 +24,7 @@ const ProveedorList: React.FC = () => {
     const [totalPages, setTotalPages] = useState(1);
     const [total, setTotal] = useState(0);
     const [showManual, setShowManual] = useState(false);
-    const limit = 5;
+    const limit = 10;
 
     const manualSections: ManualSection[] = [
         {
@@ -570,7 +570,7 @@ const ProveedorList: React.FC = () => {
 
             {/* Results Info */}
             <div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-                Mostrando {providers.length} de {total} resultados
+                Mostrando {total === 0 ? 0 : (currentPage - 1) * limit + 1} - {Math.min(currentPage * limit, total)} de {total} resultados
             </div>
 
             <div className="overflow-x-auto rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
